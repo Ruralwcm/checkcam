@@ -500,18 +500,53 @@ function renderTaskList() {
     return;
   }
   
+  const allItems = CHECKLIST_TEMPLATE.flatMap(g => g.items.map(i => i.id));
+  const activeId = getActiveTaskId();
+  
   container.innerHTML = tasks.sort((a,b) => b.created.localeCompare(a.created)).map(t => {
-    const qlkvCount = Object.keys(t.assignments || {}).filter(k => (t.assignments[k]||[]).length > 0).length;
-    const totalAssigned = Object.values(t.assignments || {}).flat().length;
-    const statusColors = { active: 'var(--primary)', completed: 'var(--success)', archived: 'var(--muted)' };
-    return `<div style="display:flex;align-items:center;gap:12px;padding:10px 12px;border:1px solid var(--border);border-radius:8px;margin-bottom:6px;cursor:pointer;" onclick="selectAdminTask('${t.id}')">
-      <span style="background:${statusColors[t.status]||'var(--muted)'};color:#fff;padding:3px 10px;border-radius:12px;font-size:11px;font-weight:600;">
-        ${t.status === 'active' ? '🟢 Active' : t.status === 'completed' ? '✅ Done' : '📦 Archived'}
-      </span>
-      <span style="flex:1;font-weight:500;">${t.name}</span>
-      <span style="font-size:12px;color:var(--muted);">${qlkvCount} QLKV · ${totalAssigned} CH</span>
-      <span style="font-size:11px;color:var(--muted);">${formatDateTime(new Date(t.created))}</span>
-      ${t.status === 'active' ? `<button class="btn btn-sm btn-outline" style="padding:4px 8px;margin-left:4px;" onclick="event.stopPropagation();editTask('${t.id}')">✏️</button><button class="btn btn-sm" style="background:var(--danger);color:#fff;padding:4px 10px;margin-left:2px;" onclick="event.stopPropagation();deleteTask('${t.id}')">🗑</button>` : ''}
+    const qlkvCount = Object.keys(t.assignments||{}).filter(k => (t.assignments[k]||[]).length > 0).length;
+    const totalAssigned = Object.values(t.assignments||{}).flat().length;
+    const gdvSet = new Set();
+    Object.keys(t.assignments||{}).forEach(qlkv => {
+      const q = QLKV_LIST.find(x => x.qlkv === qlkv);
+      if (q) gdvSet.add(q.gdv);
+    });
+    const isExpired = t.deadline && new Date(t.deadline) < new Date() && t.status === 'active';
+    const statusColor = t.status === 'active' ? (isExpired ? 'var(--danger)' : 'var(--primary)') : 'var(--success)';
+    const statusLabel = t.status === 'active' ? (isExpired ? '⚠️ Hết hạn' : '🟢 Active') : '✅ Done';
+    const created = formatDateTime(new Date(t.created));
+    const deadline = t.deadline ? formatDateTime(new Date(t.deadline)) : 'Không hạn';
+    const isSelected = t.id === activeId;
+    let tPass = 0, tFail = 0;
+    Object.values(t.results||{}).forEach(r => {
+      allItems.forEach(id => { if(r[id]){ if(r[id].status==='pass')tPass++; else tFail++; } });
+    });
+    const tTotal = tPass + tFail;
+    const tRate = tTotal > 0 ? Math.round(tPass/tTotal*100) : 0;
+
+    return `<div style="border:2px solid ${isSelected?'var(--primary)':'var(--border)'};border-radius:12px;padding:14px 16px;margin-bottom:10px;background:${isSelected?'var(--primary-light)':'var(--card)'};cursor:pointer;" onclick="selectAdminTask('${t.id}')">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;flex-wrap:wrap;gap:8px;">
+        <div style="display:flex;align-items:center;gap:10px;">
+          <span style="background:${statusColor};color:#fff;padding:3px 12px;border-radius:14px;font-size:12px;font-weight:600;">${statusLabel}</span>
+          <strong style="font-size:15px;">${t.name}</strong>
+        </div>
+        <div style="display:flex;gap:6px;" onclick="event.stopPropagation();">
+          <button class="btn btn-sm btn-outline" onclick="selectAdminTask('${t.id}')">👁 Xem</button>
+          <button class="btn btn-sm btn-outline" onclick="editTask('${t.id}')">✏️ Sửa</button>
+          ${t.status==='active'?`<button class="btn btn-sm btn-success" onclick="completeTask()">💾 Lưu</button>`:''}
+          ${t.status==='active'?`<button class="btn btn-sm" style="background:var(--danger);color:#fff;" onclick="deleteTask('${t.id}')">🗑 Xóa</button>`:''}
+        </div>
+      </div>
+      <div style="display:flex;gap:16px;flex-wrap:wrap;font-size:13px;color:var(--muted);">
+        <span>📁 <strong>${gdvSet.size}</strong> GĐV</span>
+        <span>👤 <strong>${qlkvCount}</strong> QLKV</span>
+        <span>🏪 <strong>${totalAssigned}</strong> CH</span>
+        <span>📋 <strong>14</strong> mục</span>
+        <span>📅 BĐ: ${created}</span>
+        <span>⏰ KT: ${deadline}</span>
+        ${tTotal>0?`<span style="color:${tRate>=80?'var(--success)':tRate>=50?'var(--warning)':'var(--danger)'};font-weight:600;">✅ ${tRate}% (${tPass}/${tTotal})</span>`:'<span>📝 Chưa có</span>'}
+      </div>
+      ${isSelected?'<div style="font-size:11px;color:var(--primary);margin-top:6px;font-weight:500;">▼ Đang chọn — phân công CH bên dưới</div>':''}
     </div>`;
   }).join('');
 }
