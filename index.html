@@ -115,6 +115,17 @@ tr:hover td { background:#f8fafc; }
 .btn-sm { padding:5px 12px; font-size:12px; }
 .btn:disabled { opacity:.5; cursor:not-allowed; }
 
+/* Scroll-to-top FAB (mobile) */
+.scroll-top-fab { display:none; position:fixed; bottom:80px; right:16px; width:44px; height:44px; border-radius:50%; background:var(--primary); color:#fff; border:none; font-size:20px; cursor:pointer; z-index:200; box-shadow:0 2px 8px rgba(0,0,0,.25); align-items:center; justify-content:center; }
+.scroll-top-fab.show { display:flex; }
+
+/* Touch-friendly active states */
+@media (hover:none) and (pointer:coarse) {
+  .status-btn:active { transform:scale(.95); opacity:.8; }
+  .btn:active { transform:scale(.97); }
+  select:active, input:active { background:#f1f5f9; }
+}
+
 /* Admin */
 .assign-row { display:flex; gap:12px; align-items:center; padding:10px 0; border-bottom:1px solid var(--border); }
 .assign-row .qlkv-name { min-width:180px; font-weight:500; font-size:14px; }
@@ -147,17 +158,130 @@ tr:hover td { background:#f8fafc; }
 .modal h2 { font-size:18px; margin-bottom:16px; }
 .modal .close { float:right; background:none; border:none; font-size:20px; cursor:pointer; color:var(--muted); }
 
-/* Responsive */
+/* ===== RESPONSIVE — MOBILE FIRST ===== */
+
+/* Tablet (≤1024px) */
+@media (max-width:1024px) {
+  .main-container { padding:16px; }
+  .kpi-row { grid-template-columns:repeat(2,1fr); gap:10px; }
+}
+
+/* Phone (≤768px) */
 @media (max-width:768px) {
-  .kpi-row { grid-template-columns:repeat(2,1fr); }
-  .store-selector { flex-direction:column; align-items:stretch; }
-  header { flex-direction:column; gap:8px; }
+  /* --- Header --- */
+  header { flex-direction:column; gap:8px; padding:10px 12px; }
+  header h1 { font-size:15px; white-space:nowrap; }
+  header nav { display:flex; flex-wrap:wrap; gap:4px; width:100%; }
+  header nav button { padding:10px 10px; font-size:12px; flex:1 1 auto; min-width:0; text-align:center; border-radius:6px; }
+
+  /* --- Main container --- */
+  .main-container { padding:8px 8px 80px 8px; }
+
+  /* --- KPI --- */
+  .kpi-row { grid-template-columns:repeat(2,1fr); gap:8px; }
+  .kpi-card { padding:12px 8px; }
+  .kpi-card .kpi-val { font-size:22px; }
+  .kpi-card .kpi-label { font-size:11px; }
+
+  /* --- Cards --- */
+  .card { padding:12px 10px; margin-bottom:10px; border-radius:10px; }
+  .card h2 { font-size:14px; margin-bottom:10px; }
+
+  /* --- Store / Task selector --- */
+  .store-selector { flex-direction:column; align-items:stretch; gap:6px; }
+  .store-selector select, .store-selector input { width:100%; min-width:0; padding:12px 14px; font-size:15px; }
+  .store-selector .badge-pill { font-size:11px; padding:4px 10px; }
+
+  /* --- Checklist items (CORE FIX) --- */
+  .checklist-group-header { font-size:13px; padding:10px 12px; flex-wrap:wrap; gap:4px; }
+  .checklist-item { flex-direction:column; align-items:stretch; gap:8px; padding:12px 12px; }
+  .checklist-item .item-num { min-width:auto; text-align:left; font-size:12px; }
+  .checklist-item .item-title { font-size:13px; }
+  .checklist-item .item-desc { font-size:12px; }
+  .checklist-item .item-time { font-size:11px; }
+  .checklist-item .item-actions { justify-content:flex-start; flex-wrap:wrap; gap:8px; }
+  .checklist-item .status-btn { padding:10px 18px; font-size:14px; min-height:44px; min-width:44px; }
+  .checklist-item .status-btn.evidence { padding:10px 12px; font-size:18px; }
+  .checklist-item .note-input { font-size:14px; padding:10px; }
+  .checklist-item .fault-time { flex-wrap:wrap; }
+  .checklist-item .fault-time input { font-size:14px; padding:8px; }
+  .checklist-item .fault-time input[type=date] { width:100%; }
+  .checklist-item .fault-time input[type=time] { width:100%; flex:1; }
+  .checklist-item .check-meta { flex-wrap:wrap; gap:8px; }
+
+  /* --- Tables → horizontal scroll --- */
+  .card { overflow-x:auto; -webkit-overflow-scrolling:touch; }
+  table { font-size:11px; min-width:600px; }
+  th, td { padding:8px 6px; font-size:11px; white-space:nowrap; }
+  th { font-size:10px; }
+  .bar-cell { width:80px; }
+
+  /* --- Buttons (touch targets ≥ 44px) --- */
+  .btn { padding:12px 16px; font-size:13px; min-height:44px; }
+  .btn-sm { padding:8px 12px; font-size:12px; min-height:36px; }
+
+  /* --- Submit area --- */
+  #submitArea { display:flex; flex-direction:column; gap:8px; align-items:stretch; }
+  #submitArea .btn { width:100%; margin-left:0!important; font-size:15px; padding:14px; }
+  #submitArea .btn-success { order:-1; } /* Gửi kết quả lên trên cùng */
+
+  /* --- Dashboard --- */
+  .filter-bar { flex-direction:column; align-items:stretch; gap:8px; }
+  .filter-bar select, .filter-bar input { width:100%; padding:12px 14px; font-size:15px; }
+  .filter-bar > div { flex-direction:column; gap:8px; }
+  #dashDrillTable { min-width:700px; }
+  #dashDrillTable td, #dashDrillTable th { white-space:nowrap; }
+
+  /* --- Modal --- */
+  .modal-overlay { align-items:flex-end; } /* bottom sheet style */
+  .modal { padding:16px; width:100%; max-width:100%; border-radius:16px 16px 0 0; max-height:85vh; }
+  .modal h2 { font-size:16px; }
+
+  /* --- Admin --- */
+  .assign-row { flex-wrap:wrap; gap:8px; padding:8px 0; }
+  .assign-row .qlkv-name { min-width:0; flex:1 1 100%; font-size:13px; }
+  .assign-row .store-count { min-width:0; }
+  .assign-row select { min-width:0; width:100%; padding:10px; font-size:14px; }
+  .assign-row input[type=number] { width:100%; padding:10px; font-size:14px; }
+
+  /* Task list cards */
+  #taskListContainer > div { padding:10px 12px!important; }
+  #taskListContainer .btn { padding:8px 10px; font-size:11px; }
+
+  /* --- Toast --- */
+  .toast { left:12px; right:12px; bottom:16px; text-align:center; font-size:13px; border-radius:12px; }
+
+  /* --- Session info --- */
+  .session-info { font-size:11px; padding:6px 10px; }
+  .session-info.show { flex-direction:column; gap:4px; }
+
+  /* --- Assigned chips --- */
+  .assigned-chips { gap:3px; }
+  .chip { font-size:10px; padding:3px 6px; }
+
+  /* Progress area */
+  #checkProgress > div:first-child { flex-direction:column; align-items:flex-start!important; gap:4px; }
+}
+
+/* Small phone (≤480px) */
+@media (max-width:480px) {
+  header h1 { font-size:13px; }
+  header nav button { font-size:11px; padding:8px 6px; }
+  .main-container { padding:6px 4px 90px 4px; }
+  .kpi-row { grid-template-columns:1fr 1fr; gap:6px; }
+  .kpi-card { padding:10px 6px; }
+  .kpi-card .kpi-val { font-size:20px; }
+  .checklist-item { padding:10px 8px; }
+  .checklist-item .status-btn { padding:10px 12px; font-size:13px; min-height:44px; }
+  .btn { padding:10px 14px; font-size:12px; min-height:44px; }
+  .card { padding:10px 8px; }
+  .store-selector select, .store-selector input { font-size:14px; padding:10px 12px; }
 }
 </style>
 </head>
 <body>
 <header>
-  <h1>📷 Check Cam Tuân Thủ v<span id="appVersion">1.6.0</span></h1>
+  <h1>📷 Check Cam Tuân Thủ v<span id="appVersion">1.8.0</span></h1>
   <nav>
     <button onclick="switchTab('check')" class="active" data-tab="check">📝 Check Cam</button>
     <button onclick="switchTab('dashboard')" data-tab="dashboard">📊 Dashboard</button>
@@ -294,6 +418,7 @@ tr:hover td { background:#f8fafc; }
 </div>
 
 <div class="toast" id="toast"></div>
+<button class="scroll-top-fab" id="scrollTopFab" onclick="window.scrollTo({top:0,behavior:'smooth'})" title="Lên đầu trang">⬆</button>
 <div class="modal-overlay" id="modalOverlay" onclick="closeModal(event)">
   <div class="modal" id="modalContent" onclick="event.stopPropagation()"></div>
 </div>
@@ -470,7 +595,7 @@ async function testGasConnection() {
 
 function init() {
   // Show version from VERSION file (or localStorage cache)
-  const ver = localStorage.getItem('checkcam_version') || '1.4.2';
+  const ver = localStorage.getItem('checkcam_version') || '1.8.0';
   const verEl = document.getElementById('appVersion');
   if (verEl) verEl.textContent = ver;
   
@@ -1968,6 +2093,17 @@ window.addEventListener('DOMContentLoaded', init);
 
 // Keyboard shortcut for closing modal
 document.addEventListener('keydown', e => { if (e.key === 'Escape') closeModal(); });
+
+// Scroll-to-top FAB (mobile)
+let scrollFabTimeout;
+window.addEventListener('scroll', () => {
+  const fab = document.getElementById('scrollTopFab');
+  if (!fab) return;
+  clearTimeout(scrollFabTimeout);
+  if (window.scrollY > 400) fab.classList.add('show');
+  else fab.classList.remove('show');
+  scrollFabTimeout = setTimeout(() => { if (window.scrollY > 400) fab.classList.remove('show'); }, 3000);
+}, { passive: true });
 </script>
 </body>
 </html>
