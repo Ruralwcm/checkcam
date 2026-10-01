@@ -688,6 +688,15 @@ function createTask() {
 }
 
 function selectAdminTask(taskId) {
+  const current = getActiveTaskId();
+  if (current === taskId) {
+    // Toggle off — deselect
+    setActiveTaskId('');
+    document.getElementById('adminTaskDetail').style.display = 'none';
+    refreshTaskSelectors();
+    renderTaskList();
+    return;
+  }
   setActiveTaskId(taskId);
   document.getElementById('adminTaskDetail').style.display = 'block';
   const task = getTasks().find(t => t.id === taskId);
@@ -695,6 +704,7 @@ function selectAdminTask(taskId) {
     document.getElementById('adminTaskTitle').textContent = task.name;
   }
   refreshTaskSelectors();
+  renderTaskList();
   renderAdminAssign();
 }
 
@@ -967,17 +977,23 @@ function buildQlkvList() {
 function populateSelects() {
   const qlkvSelect = document.getElementById('qlkvSelect');
   const adminGdvFilter = document.getElementById('adminGdvFilter');
-  const dashGdvFilter = document.getElementById('dashGdvFilter');
+  
+  // Sort QLKV by GĐV → QLKV name
+  const sorted = [...QLKV_LIST].sort((a,b) => a.gdv.localeCompare(b.gdv) || a.qlkv.localeCompare(b.qlkv));
   
   qlkvSelect.innerHTML = '<option value="">-- Chọn QLKV --</option>';
-  QLKV_LIST.forEach(q => {
-    qlkvSelect.innerHTML += `<option value="${q.qlkv}">${q.qlkv} (${q.totalStores} CH — GĐV ${q.gdv})</option>`;
+  let curGdv = '';
+  sorted.forEach(q => {
+    if (q.gdv !== curGdv) {
+      qlkvSelect.innerHTML += `<optgroup label="📁 ${q.gdv}"></optgroup>`;
+      curGdv = q.gdv;
+    }
+    qlkvSelect.innerHTML += `<option value="${q.qlkv}">&nbsp;&nbsp;👤 ${q.qlkv} (${q.totalStores} CH)</option>`;
   });
   
   const gdvs = [...new Set(QLKV_LIST.map(q => q.gdv))].sort();
   const gdvOpts = '<option value="">Tất cả GĐV</option>' + gdvs.map(g => `<option value="${g}">${g}</option>`).join('');
   adminGdvFilter.innerHTML = gdvOpts;
-  dashGdvFilter.innerHTML = gdvOpts;
 }
 
 // ==================== TAB SWITCHING ====================
@@ -1802,8 +1818,13 @@ function renderAdminAssign() {
   
   let qlkvs = QLKV_LIST;
   if (gdvFilter) qlkvs = qlkvs.filter(q => q.gdv === gdvFilter);
+  // Sort by GĐV → QLKV
+  qlkvs = [...qlkvs].sort((a,b) => a.gdv.localeCompare(b.gdv) || a.qlkv.localeCompare(b.qlkv));
   
+  let curGdv = '';
   document.getElementById('adminAssignList').innerHTML = qlkvs.map(q => {
+    const gdvHeader = q.gdv !== curGdv ? `<div style="font-weight:600;font-size:13px;padding:8px 0 4px;color:var(--primary);margin-top:4px;">📁 ${q.gdv}</div>` : '';
+    curGdv = q.gdv;
     const assigned = taskData.assignments[q.qlkv] || [];
     const chips = assigned.map(ma => {
       const s = q.stores.find(st => st.ma === ma);
@@ -1814,9 +1835,9 @@ function renderAdminAssign() {
     const storeOpts = q.stores.filter(s => !assigned.includes(s.ma))
       .map(s => `<option value="${s.ma}">${s.ma} — ${s.ten} (${s.tinh})</option>`).join('');
     
-    return `<div class="assign-row">
+    return `${gdvHeader}<div class="assign-row">
       <div class="qlkv-name">${q.qlkv}</div>
-      <div class="store-count">${q.totalStores} CH | GĐV: ${q.gdv}</div>
+      <div class="store-count">${q.totalStores} CH</div>
       <select onchange="addAssign('${q.qlkv}', this.value); this.value='';" ${remaining <= 0 ? 'disabled' : ''}>
         <option value="">+ Thêm CH (${assigned.length}/${maxCount})</option>
         ${storeOpts}
