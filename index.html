@@ -236,11 +236,18 @@ tr:hover td { background:#f8fafc; }
 <div class="tab-panel" id="tab-admin">
   <div class="card">
     <h2>⚙️ Phân công Check Cam — Tuần hiện tại</h2>
-    <p style="font-size:13px;color:var(--muted);margin-bottom:16px;">Mỗi QLKV check 2 CH/tuần. Chọn CH từ danh sách hoặc để QLKV tự chọn.</p>
+    <p style="font-size:13px;color:var(--muted);margin-bottom:16px;">Admin chọn số CH cần check mỗi QLKV, hoặc upload danh sách CH cụ thể.</p>
     <div class="filter-bar">
       <select id="adminGdvFilter" onchange="renderAdmin()"><option value="">Tất cả GĐV</option></select>
-      <button class="btn btn-outline btn-sm" onclick="autoAssign()">🎲 Tự động phân (2 CH/QLKV)</button>
+      <span style="font-size:13px;">Số CH/QLKV:</span>
+      <input type="number" id="assignCount" value="2" min="1" max="20" style="width:60px;text-align:center;" title="Số CH mỗi QLKV cần check">
+      <button class="btn btn-outline btn-sm" onclick="autoAssign()">🎲 Phân công random</button>
+      <button class="btn btn-outline btn-sm" onclick="document.getElementById('uploadCsvInput').click()" style="background:#fef3c7;">📤 Upload list CH</button>
+      <input type="file" id="uploadCsvInput" accept=".csv,.txt" style="display:none;" onchange="uploadAssignList(this)">
       <button class="btn btn-outline btn-sm" onclick="clearAssignments()">🗑 Xóa hết</button>
+    </div>
+    <div style="font-size:12px;color:var(--muted);margin-bottom:8px;">
+      💡 Random: gán ngẫu nhiên N CH cho mỗi QLKV &nbsp;|&nbsp; Upload: paste danh sách mã CH (mỗi dòng 1 mã) hoặc file CSV có cột "Mã SAP" hoặc "ma"
     </div>
     <div id="adminAssignList"></div>
   </div>
@@ -485,19 +492,25 @@ function onQlkvChange() {
   const qlkv = QLKV_LIST.find(q => q.qlkv === qlkvName);
   if (!qlkv) return;
   
-  // Show stores — highlight assigned ones
+  // Show ONLY assigned stores (filtered view)
   const { weekData } = getWeekData();
   const assigned = weekData.assignments[qlkvName] || [];
   
-  // Default: show all stores, mark assigned
-  qlkv.stores.forEach(s => {
-    const sel = assigned.includes(s.ma) ? ' selected' : '';
-    storeSelect.innerHTML += `<option value="${s.ma}"${sel}>${s.ma} — ${s.ten} (${s.tinh})</option>`;
-  });
-  
   if (assigned.length > 0) {
+    // Only show assigned stores
+    assigned.forEach(ma => {
+      const s = qlkv.stores.find(st => st.ma === ma);
+      if (s) {
+        storeSelect.innerHTML += `<option value="${s.ma}">${s.ma} — ${s.ten} (${s.tinh})</option>`;
+      }
+    });
     storeSelect.value = assigned[0];
     onStoreChange();
+  } else {
+    // No assignment → show message
+    storeSelect.innerHTML += '<option value="" disabled>⚠️ Chưa được phân công CH tuần này</option>';
+    document.getElementById('checkProgress').style.display = 'none';
+    document.getElementById('checklistContainer').innerHTML = '';
   }
   
   document.getElementById('submitArea').style.display = 'block';
@@ -1171,9 +1184,15 @@ function showDetail(qlkvName) {
 }
 
 // ==================== ADMIN ====================
+function getAssignCount() {
+  const val = parseInt(document.getElementById('assignCount')?.value) || 2;
+  return Math.max(1, Math.min(20, val));
+}
+
 function renderAdmin() {
   const { weekData } = getWeekData();
   const gdvFilter = document.getElementById('adminGdvFilter').value;
+  const maxCount = getAssignCount();
   
   let qlkvs = QLKV_LIST;
   if (gdvFilter) qlkvs = qlkvs.filter(q => q.gdv === gdvFilter);
@@ -1185,20 +1204,25 @@ function renderAdmin() {
       return `<span class="chip">${ma}${s ? ' — ' + s.ten.substring(0,20) : ''}<span class="remove" onclick="removeAssign('${q.qlkv}','${ma}')">×</span></span>`;
     }).join('');
     
-    const storeOpts = q.stores.map(s => 
-      `<option value="${s.ma}" ${assigned.includes(s.ma) ? 'disabled' : ''}>${s.ma} — ${s.ten} (${s.tinh})</option>`
-    ).join('');
+    const remaining = maxCount - assigned.length;
+    const storeOpts = q.stores
+      .filter(s => !assigned.includes(s.ma))
+      .map(s => `<option value="${s.ma}">${s.ma} — ${s.ten} (${s.tinh})</option>`).join('');
     
     return `<div class="assign-row">
       <div class="qlkv-name">${q.qlkv}</div>
       <div class="store-count">${q.totalStores} CH | GĐV: ${q.gdv}</div>
-      <select onchange="addAssign('${q.qlkv}', this.value); this.value='';" ${assigned.length >= 2 ? 'disabled' : ''}>
-        <option value="">+ Thêm CH (${assigned.length}/2)</option>
+      <select onchange="addAssign('${q.qlkv}', this.value); this.value='';" ${remaining <= 0 ? 'disabled' : ''}>
+        <option value="">+ Thêm CH (${assigned.length}/${maxCount})</option>
         ${storeOpts}
       </select>
       <div class="assigned-chips">${chips || '<span style="font-size:12px;color:var(--muted);">Chưa chọn CH</span>'}</div>
     </div>`;
   }).join('');
+  
+  // Update button label
+  const btn = document.querySelector('button[onclick="autoAssign()"]');
+  if (btn) btn.textContent = `🎲 Phân random (${maxCount} CH/QLKV)`;
   
   // Checklist preview
   document.getElementById('adminChecklistPreview').innerHTML = CHECKLIST_TEMPLATE.map(g => `
@@ -1211,7 +1235,8 @@ function addAssign(qlkvName, storeMa) {
   if (!storeMa) return;
   const { data, weekData } = getWeekData();
   if (!weekData.assignments[qlkvName]) weekData.assignments[qlkvName] = [];
-  if (weekData.assignments[qlkvName].length >= 2) return toast('⚠️ Tối đa 2 CH/QLKV/tuần');
+  const maxCount = getAssignCount();
+  if (weekData.assignments[qlkvName].length >= maxCount) return toast(`⚠️ Tối đa ${maxCount} CH/QLKV/tuần`);
   if (weekData.assignments[qlkvName].includes(storeMa)) return;
   weekData.assignments[qlkvName].push(storeMa);
   saveData(data);
@@ -1229,15 +1254,65 @@ function removeAssign(qlkvName, storeMa) {
 
 function autoAssign() {
   const { data, weekData } = getWeekData();
+  const maxCount = getAssignCount();
   let count = 0;
   QLKV_LIST.forEach(q => {
     const stores = [...q.stores].sort(() => Math.random() - 0.5);
-    weekData.assignments[q.qlkv] = stores.slice(0, 2).map(s => s.ma);
+    weekData.assignments[q.qlkv] = stores.slice(0, maxCount).map(s => s.ma);
     count++;
   });
   saveData(data);
   renderAdmin();
-  toast(`✅ Đã phân ngẫu nhiên 2 CH cho ${count} QLKV`);
+  toast(`✅ Đã phân ngẫu nhiên ${maxCount} CH cho ${count} QLKV`);
+}
+
+function uploadAssignList(input) {
+  const file = input.files[0];
+  if (!file) return;
+  
+  const reader = new FileReader();
+  reader.onload = function(e) {
+    const text = e.target.result;
+    // Parse: each line = a store code, or CSV with header "Mã SAP" / "ma"
+    const lines = text.split(/[\r\n]+/).filter(l => l.trim());
+    if (lines.length === 0) return toast('⚠️ File trống');
+    
+    // Detect if CSV with header
+    const firstLine = lines[0].toLowerCase();
+    let codes = [];
+    if (firstLine.includes('mã sap') || firstLine.includes('ma,')) {
+      // CSV with header — extract first column
+      codes = lines.slice(1).map(l => l.split(/[,\t]/)[0].trim()).filter(c => c);
+    } else {
+      // Plain list of codes
+      codes = lines.map(l => l.split(/[,\t]/)[0].trim()).filter(c => c);
+    }
+    
+    if (codes.length === 0) return toast('⚠️ Không tìm thấy mã CH trong file');
+    
+    // Map codes to QLKV from STORE_DATA
+    const { data, weekData } = getWeekData();
+    let assigned = 0, notFound = 0;
+    
+    codes.forEach(code => {
+      const store = STORE_DATA.find(s => s.ma === code);
+      if (store && store.qlkv) {
+        if (!weekData.assignments[store.qlkv]) weekData.assignments[store.qlkv] = [];
+        if (!weekData.assignments[store.qlkv].includes(code)) {
+          weekData.assignments[store.qlkv].push(code);
+          assigned++;
+        }
+      } else {
+        notFound++;
+      }
+    });
+    
+    saveData(data);
+    renderAdmin();
+    toast(`✅ Đã gán ${assigned} CH từ file${notFound > 0 ? ` (${notFound} mã không tìm thấy)` : ''}`);
+  };
+  reader.readAsText(file);
+  input.value = ''; // Reset for re-upload
 }
 
 function clearAssignments() {
