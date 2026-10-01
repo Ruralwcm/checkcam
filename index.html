@@ -75,6 +75,14 @@ header nav button.active { background:var(--primary); border-color:var(--primary
 .checklist-item .note-row { display:flex; gap:8px; margin-top:6px; }
 .checklist-item .note-input { flex:1; padding:7px 10px; border:1px solid var(--danger); border-radius:6px; font-size:13px; display:none; background:#fff5f5; }
 .checklist-item .note-input.show { display:block; }
+.checklist-item .fault-time { display:none; gap:8px; align-items:center; margin-top:4px; }
+.checklist-item .fault-time.show { display:flex; }
+.checklist-item .fault-time input { padding:6px 8px; border:1px solid var(--danger); border-radius:6px; font-size:12px; background:#fff5f5; }
+.checklist-item .fault-time input[type=date] { width:130px; }
+.checklist-item .fault-time input[type=time] { width:100px; }
+.checklist-item .fault-time label { font-size:12px; font-weight:600; color:var(--danger); white-space:nowrap; }
+.checklist-item .fault-time-display { font-size:11px; color:var(--danger); margin-top:2px; display:none; font-weight:500; }
+.checklist-item .fault-time-display.show { display:block; }
 .audit-badge { display:inline-block; padding:3px 8px; border-radius:4px; font-size:11px; font-weight:500; }
 .audit-badge.warning { background:#fef3c7; color:#92400e; }
 .audit-badge.ok { background:#d1fae5; color:#065f46; }
@@ -654,8 +662,15 @@ function renderChecklist() {
             <div class="check-meta">
               <span class="timestamp" data-item="${item.id}">🕐 <span class="ts-text"></span></span>
               <span class="evidence-link" data-item="${item.id}" onclick="viewEvidence('${item.id}')">📸 Xem bằng chứng</span>
+              <span class="fault-time-display" data-item="${item.id}"></span>
             </div>
-            <input class="note-input" placeholder="Ghi chú (bắt buộc nếu Không đạt)..." data-item="${item.id}">
+            <input class="note-input" placeholder="Ghi chú lý do Không đạt..." data-item="${item.id}">
+            <div class="fault-time">
+              <label>⏰ Lỗi lúc:</label>
+              <input type="date" class="fault-date" data-item="${item.id}" onchange="saveFaultTime('${item.id}')">
+              <input type="time" class="fault-min" data-item="${item.id}" onchange="saveFaultTime('${item.id}')">
+              <span style="font-size:11px;color:var(--muted);">(tua camera tới đúng thời điểm vi phạm)</span>
+            </div>
           </div>
           <div class="item-actions">
             <button class="status-btn pass" data-item="${item.id}" data-status="pass" onclick="setStatus('${item.id}','pass')">✅ Đạt</button>
@@ -695,11 +710,27 @@ function loadCheckResults(storeMa) {
         failBtn.classList.add('selected');
         noteInput.classList.add('show');
         noteInput.value = results[itemId].note || '';
+        // Show fault-time inputs
+        const faultTimeDiv = el.querySelector('.fault-time');
+        const faultDate = el.querySelector('.fault-date');
+        const faultMin = el.querySelector('.fault-min');
+        if (faultTimeDiv) faultTimeDiv.classList.add('show');
+        const ft = results[itemId].faultTime || '';
+        if (faultDate) faultDate.value = ft ? ft.split(' ')[0] : '';
+        if (faultMin) faultMin.value = ft ? ft.split(' ')[1]?.substring(0,5) || '' : '';
       }
       // Show timestamp
       if (results[itemId].timestamp && timestampEl) {
         timestampEl.classList.add('show');
         if (tsText) tsText.textContent = formatDateTime(new Date(results[itemId].timestamp));
+      }
+      // Show fault time display
+      const ftDisplay = el.querySelector('.fault-time-display');
+      if (ftDisplay && results[itemId].faultTime) {
+        const parts = results[itemId].faultTime.split(' ');
+        const dateStr = parts[0] ? parts[0].split('-').reverse().join('/') : '';
+        ftDisplay.textContent = `⏰ Lỗi lúc: ${dateStr} ${parts[1] || ''}`;
+        ftDisplay.classList.add('show');
       }
       // Show evidence
       if (results[itemId].evidence && evidenceLink) {
@@ -723,25 +754,35 @@ function setStatus(itemId, status) {
   const passBtn = el.querySelector('.status-btn.pass');
   const failBtn = el.querySelector('.status-btn.fail');
   const noteInput = el.querySelector('.note-input');
+  const faultTimeDiv = el.querySelector('.fault-time');
+  const faultDate = el.querySelector('.fault-date');
+  const faultMin = el.querySelector('.fault-min');
+  const faultDisplay = el.querySelector('.fault-time-display');
   const timestampEl = el.querySelector('.timestamp');
   const tsText = el.querySelector('.ts-text');
   
   passBtn.classList.remove('selected');
   failBtn.classList.remove('selected');
   noteInput.classList.remove('show');
+  if (faultTimeDiv) faultTimeDiv.classList.remove('show');
+  if (faultDisplay) faultDisplay.classList.remove('show');
   
   const now = new Date().toISOString();
-  // Preserve existing evidence if any
   const existing = weekData.results[storeMa][itemId] || {};
   
   if (status === 'pass') {
     passBtn.classList.add('selected');
-    weekData.results[storeMa][itemId] = { status: 'pass', note: '', timestamp: now, evidence: existing.evidence || null };
+    weekData.results[storeMa][itemId] = { status: 'pass', note: '', timestamp: now, evidence: existing.evidence || null, faultTime: null };
   } else {
     failBtn.classList.add('selected');
     noteInput.classList.add('show');
     noteInput.focus();
-    weekData.results[storeMa][itemId] = { status: 'fail', note: noteInput.value || '', timestamp: now, evidence: existing.evidence || null };
+    if (faultTimeDiv) faultTimeDiv.classList.add('show');
+    // Restore existing fault time if any
+    const ft = existing.faultTime || '';
+    if (faultDate) faultDate.value = ft ? ft.split(' ')[0] : '';
+    if (faultMin) faultMin.value = ft ? ft.split(' ')[1]?.substring(0,5) || '' : '';
+    weekData.results[storeMa][itemId] = { status: 'fail', note: existing.note || '', timestamp: now, evidence: existing.evidence || null, faultTime: ft };
   }
   
   // Update timestamp display
@@ -750,6 +791,32 @@ function setStatus(itemId, status) {
   saveData(data);
   updateProgress(storeMa);
   updateSessionInfo(storeMa);
+}
+
+// ==================== FAULT TIME ====================
+function saveFaultTime(itemId) {
+  const storeMa = document.getElementById('storeSelect').value;
+  if (!storeMa) return;
+  
+  const el = document.querySelector(`.checklist-item[data-id="${itemId}"]`);
+  const faultDate = el.querySelector('.fault-date');
+  const faultMin = el.querySelector('.fault-min');
+  const faultDisplay = el.querySelector('.fault-time-display');
+  const dateVal = faultDate?.value || '';
+  const timeVal = faultMin?.value || '';
+  
+  if (dateVal && timeVal) {
+    const ft = `${dateVal} ${timeVal}`;
+    const { data, weekData } = getWeekData();
+    if (weekData.results[storeMa]?.[itemId]) {
+      weekData.results[storeMa][itemId].faultTime = ft;
+      saveData(data);
+      if (faultDisplay) {
+        faultDisplay.textContent = `⏰ Lỗi lúc: ${dateVal.split('-').reverse().join('/')} ${timeVal}`;
+        faultDisplay.classList.add('show');
+      }
+    }
+  }
 }
 
 // Auto-save notes on input
@@ -797,6 +864,14 @@ function submitCheck() {
   
   if (missingNote.length > 0) {
     return toast('⚠️ Vui lòng nhập ghi chú cho tất cả hạng mục "Không đạt"');
+  }
+  
+  const missingFaultTime = allItems.filter(id => {
+    return results[id] && results[id].status === 'fail' && !results[id].faultTime;
+  });
+  
+  if (missingFaultTime.length > 0) {
+    return toast('⚠️ Vui lòng nhập "Lỗi lúc ngày/giờ nào" cho tất cả hạng mục "Không đạt"');
   }
   
   const checkedCount = Object.keys(results).length;
@@ -855,6 +930,7 @@ async function pushToSheet() {
         group: item.group,
         status: results[item.id].status,
         note: results[item.id].note || '',
+        faultTime: results[item.id].faultTime || '',
         time: item.time,
         timestamp: results[item.id].timestamp || '',
         hasEvidence: !!results[item.id].evidence
@@ -1080,7 +1156,8 @@ function showDetail(qlkvName) {
         const icon = r[id].status === 'pass' ? '✅' : '❌';
         const ts = r[id].timestamp ? formatDateTime(new Date(r[id].timestamp)) : '';
         const ev = r[id].evidence ? ' 📸' : '';
-        html += `<div style="padding:2px 0;">${icon} <strong>${id}</strong> — ${r[id].note || '—'}
+        const ft = r[id].faultTime ? ` ⏰Lỗi: ${r[id].faultTime.split(' ')[0].split('-').reverse().join('/')} ${r[id].faultTime.split(' ')[1]||''}` : '';
+        html += `<div style="padding:2px 0;">${icon} <strong>${id}</strong> — ${r[id].note || '—'}${ft}
           <span style="color:var(--muted);font-size:10px;"> [${ts}]${ev}</span></div>`;
       }
     });
