@@ -585,8 +585,8 @@ function renderTaskList() {
         <div style="display:flex;gap:6px;" onclick="event.stopPropagation();">
           <button class="btn btn-sm btn-outline" onclick="selectAdminTask('${t.id}')">👁 Xem</button>
           <button class="btn btn-sm btn-outline" onclick="editTask('${t.id}')">✏️ Sửa</button>
-          ${t.status==='active'?`<button class="btn btn-sm btn-success" onclick="completeTask()">💾 Lưu</button>`:''}
-          ${t.status==='active'?`<button class="btn btn-sm" style="background:var(--danger);color:#fff;" onclick="deleteTask('${t.id}')">🗑 Xóa</button>`:''}
+          <button class="btn btn-sm btn-success" onclick="completeTask()">💾 Lưu</button>
+          <button class="btn btn-sm" style="background:var(--danger);color:#fff;" onclick="deleteTask('${t.id}')">🗑 Xóa</button>
         </div>
       </div>
       <div style="display:flex;gap:16px;flex-wrap:wrap;font-size:13px;color:var(--muted);">
