@@ -157,7 +157,7 @@ tr:hover td { background:#f8fafc; }
 </head>
 <body>
 <header>
-  <h1>📷 Check Cam Tuân Thủ — WinMart+ Rural MB</h1>
+  <h1>📷 Check Cam Tuân Thủ v<span id="appVersion">1.4.2</span></h1>
   <nav>
     <button onclick="switchTab('check')" class="active" data-tab="check">📝 Check Cam</button>
     <button onclick="switchTab('dashboard')" data-tab="dashboard">📊 Dashboard</button>
@@ -403,6 +403,18 @@ async function testGasConnection() {
 }
 
 function init() {
+  // Show version from VERSION file (or localStorage cache)
+  const ver = localStorage.getItem('checkcam_version') || '1.4.2';
+  const verEl = document.getElementById('appVersion');
+  if (verEl) verEl.textContent = ver;
+  
+  // Try to fetch latest VERSION from GitHub
+  fetch('https://ruralwcm.github.io/checkcam/VERSION?' + Date.now())
+    .then(r => r.text()).then(v => {
+      const vClean = v.trim();
+      if (vClean && verEl) { verEl.textContent = vClean; localStorage.setItem('checkcam_version', vClean); }
+    }).catch(() => {});
+  
   ensureDefaultTask();
   loadStoreData();
   renderChecklist();
@@ -411,12 +423,8 @@ function init() {
   renderAdmin();
   renderDashboard();
   
-  // Load saved GAS URL
   const savedUrl = getGasUrl();
-  if (savedUrl) {
-    const input = document.getElementById('gasUrlInput');
-    if (input) input.value = savedUrl;
-  }
+  if (savedUrl) { const input = document.getElementById('gasUrlInput'); if (input) input.value = savedUrl; }
 }
 
 // ==================== TASK MANAGEMENT ====================
@@ -495,7 +503,7 @@ function renderTaskList() {
       <span style="flex:1;font-weight:500;">${t.name}</span>
       <span style="font-size:12px;color:var(--muted);">${qlkvCount} QLKV · ${totalAssigned} CH</span>
       <span style="font-size:11px;color:var(--muted);">${formatDateTime(new Date(t.created))}</span>
-      ${t.status === 'active' ? `<button class="btn btn-sm" style="background:var(--danger);color:#fff;padding:4px 10px;" onclick="event.stopPropagation();deleteTask('${t.id}')">🗑</button>` : ''}
+      ${t.status === 'active' ? `<button class="btn btn-sm btn-outline" style="padding:4px 8px;margin-left:4px;" onclick="event.stopPropagation();editTask('${t.id}')">✏️</button><button class="btn btn-sm" style="background:var(--danger);color:#fff;padding:4px 10px;margin-left:2px;" onclick="event.stopPropagation();deleteTask('${t.id}')">🗑</button>` : ''}
     </div>`;
   }).join('');
 }
@@ -582,6 +590,40 @@ function completeTask() {
     renderDashboard();
     toast('✅ Task đã hoàn thành!');
   }
+}
+
+function editTask(taskId) {
+  const tasks = getTasks();
+  const task = tasks.find(t => t.id === taskId);
+  if (!task) return;
+  
+  document.getElementById('modalContent').innerHTML = `
+    <h2>✏️ Sửa Task</h2>
+    <div style="display:flex;flex-direction:column;gap:12px;">
+      <label style="font-size:13px;font-weight:600;">Tên Task</label>
+      <input id="editTaskName" value="${task.name.replace(/"/g,'&quot;')}" style="padding:10px;border:1px solid var(--border);border-radius:8px;font-size:14px;">
+      <label style="font-size:13px;font-weight:600;">Deadline</label>
+      <input id="editTaskDeadline" type="datetime-local" value="${(task.deadline||'').slice(0,16)}" style="padding:10px;border:1px solid var(--border);border-radius:8px;font-size:14px;">
+      <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:8px;">
+        <button class="btn btn-outline btn-sm" onclick="closeModal()">Hủy</button>
+        <button class="btn btn-primary btn-sm" onclick="saveEditTask('${taskId}')">💾 Lưu</button>
+      </div>
+    </div>`;
+  document.getElementById('modalOverlay').classList.add('show');
+}
+
+function saveEditTask(taskId) {
+  const tasks = getTasks();
+  const task = tasks.find(t => t.id === taskId);
+  if (!task) return;
+  task.name = document.getElementById('editTaskName').value.trim();
+  task.deadline = document.getElementById('editTaskDeadline').value;
+  if (!task.name) return toast('⚠️ Nhập tên Task');
+  saveTasks(tasks);
+  closeModal();
+  refreshTaskSelectors();
+  renderAdmin();
+  toast('✅ Đã cập nhật Task');
 }
 
 // ==================== STORE DATA ====================
@@ -1197,7 +1239,7 @@ function renderDashboard() {
   const tasks = getTasks();
   const allItems = CHECKLIST_TEMPLATE.flatMap(g => g.items.map(i => i.id));
   const taskId = getActiveTaskId();
-  const taskData = td();
+  const { taskData } = td();
   
   // KPI — show active task or overview
   let totalChecks = 0, totalPass = 0, totalFail = 0;
@@ -1430,10 +1472,12 @@ function getAssignCount() {
   return Math.max(1, Math.min(20, val));
 }
 
-function td() { // shortcut: get active task data
+function td() { // shortcut: get active task data + parent data ref
+  const data = getData();
   const taskId = getActiveTaskId();
-  if (!taskId) return null;
-  return getTaskData(taskId);
+  if (!taskId) return { taskData: null, data };
+  if (!data[taskId]) data[taskId] = { checks:{}, assignments:{}, results:{}, sessions:{} };
+  return { taskData: data[taskId], data, taskId };
 }
 
 function renderAdmin() {
@@ -1456,7 +1500,7 @@ function renderAdmin() {
 }
 
 function renderAdminAssign() {
-  const taskData = td();
+  const { taskData } = td();
   if (!taskData) { document.getElementById('adminAssignList').innerHTML = '<p style="color:var(--muted);padding:12px;">Vui lòng chọn Task trước</p>'; return; }
   
   const gdvFilter = document.getElementById('adminGdvFilter')?.value || '';
@@ -1490,8 +1534,8 @@ function renderAdminAssign() {
 
 function addAssign(qlkvName, storeMa) {
   if (!storeMa) return;
-  const taskData = td(); if (!taskData) return;
-  const data = getData(); const taskId = getActiveTaskId();
+  const { taskData, data } = td(); if (!taskData) return;
+  const taskId = getActiveTaskId();
   if (!taskData.assignments[qlkvName]) taskData.assignments[qlkvName] = [];
   const maxCount = getAssignCount();
   if (taskData.assignments[qlkvName].length >= maxCount) return toast(`⚠️ Tối đa ${maxCount} CH/QLKV`);
@@ -1502,16 +1546,15 @@ function addAssign(qlkvName, storeMa) {
 }
 
 function removeAssign(qlkvName, storeMa) {
-  const taskData = td(); if (!taskData) return;
-  const data = getData();
+  const { taskData, data } = td(); if (!taskData) return;
   if (!taskData.assignments[qlkvName]) return;
   taskData.assignments[qlkvName] = taskData.assignments[qlkvName].filter(m => m !== storeMa);
   saveData(data); renderAdminAssign();
 }
 
 function autoAssign() {
-  const taskData = td(); if (!taskData) return toast('⚠️ Chọn Task trước');
-  const data = getData(); const maxCount = getAssignCount();
+  const { taskData, data } = td(); if (!taskData) return toast('⚠️ Chọn Task trước');
+  const maxCount = getAssignCount();
   let count = 0;
   QLKV_LIST.forEach(q => {
     const stores = [...q.stores].sort(() => Math.random() - 0.5);
@@ -1523,8 +1566,7 @@ function autoAssign() {
 }
 
 function uploadAssignList(input) {
-  const taskData = td(); if (!taskData) return toast('⚠️ Chọn Task trước');
-  const data = getData();
+  const { taskData, data } = td(); if (!taskData) return toast('⚠️ Chọn Task trước');
   const file = input.files[0]; if (!file) return;
   
   const reader = new FileReader();
@@ -1557,9 +1599,8 @@ function uploadAssignList(input) {
 }
 
 function clearAssignments() {
-  const taskData = td(); if (!taskData) return;
+  const { taskData, data } = td(); if (!taskData) return;
   if (!confirm('Xóa tất cả phân công của Task này?')) return;
-  const data = getData();
   taskData.assignments = {};
   saveData(data); renderAdminAssign();
   toast('🗑 Đã xóa tất cả phân công');
