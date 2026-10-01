@@ -240,11 +240,13 @@ tr:hover td { background:#f8fafc; }
 
 <!-- ===== TAB 3: ADMIN ===== -->
 <div class="tab-panel" id="tab-admin">
+  
+  <!-- ===== SECTION 1: QUẢN LÝ TASK ===== -->
   <div class="card">
-    <h2>📋 Quản lý Task Check Cam</h2>
+    <h2>📋 Quản lý Task</h2>
     <div class="filter-bar">
       <button class="btn btn-primary btn-sm" onclick="showCreateTask()">➕ Tạo Task mới</button>
-      <span style="font-size:13px;color:var(--muted);">Mỗi Task = 1 đợt check cam với checklist + CH được phân công riêng</span>
+      <span style="font-size:13px;color:var(--muted);">Mỗi Task = 1 đợt check cam với Chuyên đề + CH được phân công riêng</span>
     </div>
     <div id="taskListContainer" style="font-size:13px;"></div>
   </div>
@@ -264,12 +266,17 @@ tr:hover td { background:#f8fafc; }
     <div id="adminAssignList"></div>
   </div>
 
+  <!-- ===== SECTION 2: QUẢN LÝ CHUYÊN ĐỀ ===== -->
   <div class="card">
-    <h2>📋 Checklist Mẫu</h2>
-    <p style="font-size:13px;color:var(--muted);margin-bottom:12px;">Checklist chuẩn 14 hạng mục — dùng cho tất cả Task.</p>
-    <div id="adminChecklistPreview" style="font-size:13px;"></div>
+    <h2>📦 Quản lý Chuyên đề (Bộ Kit Check)</h2>
+    <div class="filter-bar">
+      <button class="btn btn-outline btn-sm" onclick="showCreateChuyenDe()">➕ Tạo Chuyên đề mới</button>
+      <span style="font-size:13px;color:var(--muted);">Mỗi Chuyên đề = 1 bộ hạng mục check, dùng để tạo Task nhanh</span>
+    </div>
+    <div id="chuyenDeContainer" style="font-size:13px;"></div>
   </div>
 
+  <!-- ===== GAS CONFIG ===== -->
   <div class="card">
     <h2>🔗 Cấu hình Google Sheets</h2>
     <p style="font-size:13px;color:var(--muted);margin-bottom:12px;">
@@ -751,6 +758,141 @@ function saveEditTask(taskId) {
   refreshTaskSelectors();
   renderAdmin();
   toast('✅ Đã cập nhật Task');
+}
+
+// ==================== CHUYÊN ĐỀ MANAGEMENT ====================
+function renderChuyenDeList() {
+  const container = document.getElementById('chuyenDeContainer');
+  if (!container) return;
+  const cdList = getChuyenDe();
+  
+  container.innerHTML = cdList.length === 0 
+    ? '<p style="color:var(--muted);padding:12px;">Chưa có Chuyên đề nào.</p>'
+    : cdList.map(cd => `<div style="border:1px solid var(--border);border-radius:8px;padding:12px;margin-bottom:8px;">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;">
+        <div>
+          <strong>${cd.name}</strong>
+          ${cd.isDefault ? '<span class="badge" style="background:#ede9fe;color:#5b21b6;margin-left:8px;">Mặc định</span>' : ''}
+          <span style="font-size:12px;color:var(--muted);margin-left:8px;">${cd.items.length} hạng mục</span>
+        </div>
+        <div style="display:flex;gap:4px;">
+          <button class="btn btn-sm btn-outline" onclick="editChuyenDe('${cd.id}')">✏️ Sửa</button>
+          ${!cd.isDefault ? `<button class="btn btn-sm" style="background:var(--danger);color:#fff;" onclick="deleteChuyenDe('${cd.id}')">🗑 Xóa</button>` : ''}
+        </div>
+      </div>
+      <div style="font-size:12px;color:var(--muted);">${cd.desc||''}</div>
+      <div style="font-size:12px;margin-top:4px;display:flex;flex-wrap:wrap;gap:4px;">
+        ${cd.items.slice(0,8).map(it => `<span style="background:var(--bg);padding:2px 8px;border-radius:4px;">${it.id}. ${it.title} ${it.type==='ad-hoc'?'🔹':''}</span>`).join('')}
+        ${cd.items.length > 8 ? `<span style="color:var(--muted);">+${cd.items.length-8} mục</span>` : ''}
+      </div>
+    </div>`).join('');
+}
+
+function showCreateChuyenDe() {
+  document.getElementById('modalContent').innerHTML = `
+    <h2>➕ Tạo Chuyên đề mới</h2>
+    <div style="display:flex;flex-direction:column;gap:10px;">
+      <label style="font-size:13px;font-weight:600;">Tên Chuyên đề</label>
+      <input id="newCdName" placeholder="VD: Check Tác phong NV" style="padding:8px;border:1px solid var(--border);border-radius:8px;">
+      <label style="font-size:13px;font-weight:600;">Mô tả</label>
+      <input id="newCdDesc" placeholder="Mô tả ngắn" style="padding:8px;border:1px solid var(--border);border-radius:8px;">
+      <div style="font-size:12px;color:var(--muted);">💡 Sau khi tạo, có thể thêm hạng mục bằng nút ✏️ Sửa</div>
+      <div style="display:flex;gap:8px;justify-content:flex-end;">
+        <button class="btn btn-outline btn-sm" onclick="closeModal()">Hủy</button>
+        <button class="btn btn-primary btn-sm" onclick="createChuyenDe()">Tạo</button>
+      </div>
+    </div>`;
+  document.getElementById('modalOverlay').classList.add('show');
+}
+
+function createChuyenDe() {
+  const name = document.getElementById('newCdName').value.trim();
+  if (!name) return toast('⚠️ Nhập tên');
+  const desc = document.getElementById('newCdDesc').value.trim();
+  const cd = getChuyenDe();
+  cd.push({
+    id: 'cd_' + Date.now(), name, desc, isDefault: false,
+    items: [...getDefaultChuyenDe()[0].items] // Start with default items
+  });
+  saveChuyenDe(cd);
+  closeModal();
+  renderChuyenDeList();
+  toast('✅ Đã tạo Chuyên đề: ' + name);
+}
+
+function editChuyenDe(cdId) {
+  const cd = getChuyenDe().find(c => c.id === cdId);
+  if (!cd) return;
+  let itemsHtml = cd.items.map((it,i) => `
+    <div style="display:flex;gap:6px;align-items:center;padding:4px 0;border-bottom:1px solid var(--border);">
+      <span style="min-width:30px;font-size:12px;">${it.id}</span>
+      <input value="${it.title.replace(/"/g,'&quot;')}" data-idx="${i}" data-field="title" style="flex:1;padding:4px;border:1px solid var(--border);border-radius:4px;font-size:12px;" onchange="updateCdItem('${cdId}',${i},'title',this.value)">
+      <select data-idx="${i}" data-field="type" onchange="updateCdItem('${cdId}',${i},'type',this.value)" style="font-size:11px;padding:3px;">
+        <option value="periodic" ${it.type==='periodic'?'selected':''}>Định kỳ</option>
+        <option value="ad-hoc" ${it.type==='ad-hoc'?'selected':''}>Sự vụ</option>
+      </select>
+      <button class="btn btn-sm" style="color:var(--danger);padding:2px 6px;" onclick="removeCdItem('${cdId}',${i})">×</button>
+    </div>`).join('');
+  
+  document.getElementById('modalContent').innerHTML = `
+    <h2>✏️ Sửa Chuyên đề: ${cd.name}</h2>
+    <div style="display:flex;flex-direction:column;gap:8px;max-height:60vh;overflow-y:auto;">
+      <label style="font-size:13px;">Tên</label>
+      <input id="editCdName" value="${cd.name.replace(/"/g,'&quot;')}" style="padding:8px;border:1px solid var(--border);border-radius:8px;">
+      <label style="font-size:13px;">Hạng mục (${cd.items.length})</label>
+      ${itemsHtml}
+      <button class="btn btn-outline btn-sm" onclick="addCdItem('${cdId}')">➕ Thêm hạng mục</button>
+      <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:8px;">
+        <button class="btn btn-outline btn-sm" onclick="closeModal()">Hủy</button>
+        <button class="btn btn-primary btn-sm" onclick="saveEditChuyenDe('${cdId}')">💾 Lưu</button>
+      </div>
+    </div>`;
+  document.getElementById('modalOverlay').classList.add('show');
+}
+
+function updateCdItem(cdId, idx, field, value) {
+  const cd = getChuyenDe().find(c => c.id === cdId);
+  if (!cd || !cd.items[idx]) return;
+  cd.items[idx][field] = value;
+  saveChuyenDe(cd);
+}
+
+function addCdItem(cdId) {
+  const cd = getChuyenDe().find(c => c.id === cdId);
+  if (!cd) return;
+  const newId = (cd.items.length + 1).toString();
+  cd.items.push({ id: newId, title: 'Hạng mục mới', desc: '', time: '', group: 'Khác', type: 'ad-hoc' });
+  saveChuyenDe(cd);
+  editChuyenDe(cdId); // Re-render modal
+}
+
+function removeCdItem(cdId, idx) {
+  if (!confirm('Xóa hạng mục này?')) return;
+  const cd = getChuyenDe().find(c => c.id === cdId);
+  if (!cd) return;
+  cd.items.splice(idx, 1);
+  saveChuyenDe(cd);
+  editChuyenDe(cdId);
+}
+
+function saveEditChuyenDe(cdId) {
+  const cd = getChuyenDe().find(c => c.id === cdId);
+  if (!cd) return;
+  cd.name = document.getElementById('editCdName').value.trim();
+  if (!cd.name) return toast('⚠️ Nhập tên');
+  saveChuyenDe(cd);
+  closeModal();
+  renderChuyenDeList();
+  toast('✅ Đã lưu Chuyên đề');
+}
+
+function deleteChuyenDe(cdId) {
+  if (!confirm('Xóa Chuyên đề này? Các Task dùng nó sẽ về bộ kit mặc định.')) return;
+  let cd = getChuyenDe();
+  cd = cd.filter(c => c.id !== cdId);
+  saveChuyenDe(cd);
+  renderChuyenDeList();
+  toast('🗑 Đã xóa Chuyên đề');
 }
 
 // ==================== STORE DATA ====================
@@ -1639,12 +1781,7 @@ function td() { // shortcut: get active task data + parent data ref
 
 function renderAdmin() {
   renderTaskList();
-  
-  // Checklist preview
-  document.getElementById('adminChecklistPreview').innerHTML = activeChecklist().map(g => `
-    <div style="margin-bottom:8px;"><strong>${g.group}</strong> (${g.items.length} mục)</div>
-    ${g.items.map(it => `<div style="padding:4px 0 4px 16px;font-size:12px;">${it.id}. ${it.title} — <span style="color:var(--muted);">📹 ${it.time}</span></div>`).join('')}
-  `).join('');
+  renderChuyenDeList();
   
   // Show task detail if active
   const taskId = getActiveTaskId();
