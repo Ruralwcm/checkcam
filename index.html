@@ -1,0 +1,1000 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Check Cam Tuân Thủ — WinMart+ Rural Miền Bắc</title>
+<style>
+:root {
+  --primary: #4f46e5; --primary-light: #eef2ff; --border: #e2e8f0;
+  --bg: #f1f5f9; --card: #fff; --text: #1e293b; --muted: #64748b;
+  --danger: #ef4444; --success: #10b981; --warning: #f59e0b;
+  --indigo: #6366f1; --rose: #f43f5e;
+}
+* { box-sizing:border-box; margin:0; padding:0; }
+body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background:var(--bg); color:var(--text); min-height:100vh; }
+header { background: linear-gradient(135deg, #1e293b 0%, #334155 100%); color:#fff; padding:12px 24px; display:flex; align-items:center; justify-content:space-between; position:sticky; top:0; z-index:100; }
+header h1 { font-size:18px; font-weight:600; }
+header nav { display:flex; gap:6px; }
+header nav button { padding:8px 16px; border-radius:8px; border:1px solid rgba(255,255,255,.2); background:transparent; color:rgba(255,255,255,.7); font-size:13px; font-weight:500; cursor:pointer; transition:all .15s; }
+header nav button:hover { background:rgba(255,255,255,.1); color:#fff; }
+header nav button.active { background:var(--primary); border-color:var(--primary); color:#fff; }
+
+.main-container { max-width:1100px; margin:0 auto; padding:20px 24px; }
+
+/* Tab panels */
+.tab-panel { display:none; }
+.tab-panel.active { display:block; }
+
+/* Cards */
+.card { background:var(--card); border:1px solid var(--border); border-radius:12px; padding:20px; margin-bottom:16px; }
+.card h2 { font-size:16px; margin-bottom:16px; display:flex; align-items:center; gap:8px; }
+.card h3 { font-size:14px; margin-bottom:12px; color:var(--muted); }
+
+/* KPI row */
+.kpi-row { display:grid; grid-template-columns:repeat(4,1fr); gap:12px; margin-bottom:16px; }
+.kpi-card { background:var(--card); border:1px solid var(--border); border-radius:10px; padding:16px; text-align:center; }
+.kpi-card .kpi-val { font-size:28px; font-weight:700; margin:4px 0; }
+.kpi-card .kpi-label { font-size:12px; color:var(--muted); }
+.kpi-card .kpi-sub { font-size:11px; color:var(--muted); margin-top:2px; }
+.kpi-card.green .kpi-val { color:var(--success); }
+.kpi-card.red .kpi-val { color:var(--danger); }
+.kpi-card.blue .kpi-val { color:var(--primary); }
+
+/* Store selector */
+.store-selector { display:flex; gap:12px; align-items:center; flex-wrap:wrap; margin-bottom:16px; }
+.store-selector select, .store-selector input { padding:10px 14px; border:1px solid var(--border); border-radius:8px; font-size:14px; background:var(--card); min-width:200px; }
+.week-badge { background:var(--primary-light); color:var(--primary); padding:6px 14px; border-radius:20px; font-size:13px; font-weight:600; }
+.deadline-badge { background:#fef2f2; color:var(--danger); padding:6px 14px; border-radius:20px; font-size:13px; font-weight:600; }
+
+/* Checklist */
+.checklist-group { margin-bottom:20px; }
+.checklist-group-header { background:var(--bg); padding:12px 16px; border-radius:8px 8px 0 0; font-weight:600; font-size:14px; display:flex; align-items:center; justify-content:space-between; border:1px solid var(--border); }
+.checklist-item { display:flex; align-items:center; gap:16px; padding:16px 18px; border:1px solid var(--border); border-top:none; transition:background .15s; }
+.checklist-item:last-child { border-radius:0 0 8px 8px; }
+.checklist-item:hover { background:#f8fafc; }
+.checklist-item .item-num { min-width:32px; font-weight:700; color:var(--primary); font-size:13px; text-align:center; }
+.checklist-item .item-body { flex:1; min-width:0; }
+.checklist-item .item-title { font-weight:600; font-size:14px; margin-bottom:3px; color:var(--text); }
+.checklist-item .item-desc { font-size:13px; color:#475569; line-height:1.5; margin-bottom:4px; }
+.checklist-item .item-time { display:inline-block; font-size:12px; background:#ede9fe; color:#5b21b6; padding:3px 10px; border-radius:5px; font-weight:500; }
+.checklist-item .item-actions { display:flex; gap:8px; align-items:center; flex-shrink:0; }
+.checklist-item .status-btn { padding:8px 14px; border-radius:8px; border:2px solid var(--border); background:var(--card); font-size:13px; font-weight:600; cursor:pointer; transition:all .15s; white-space:nowrap; }
+.checklist-item .status-btn:hover { transform:translateY(-1px); }
+.checklist-item .status-btn.pass { border-color:var(--success); color:var(--success); }
+.checklist-item .status-btn.pass.selected { background:var(--success); color:#fff; border-color:var(--success); }
+.checklist-item .status-btn.fail { border-color:var(--danger); color:var(--danger); }
+.checklist-item .status-btn.fail.selected { background:var(--danger); color:#fff; border-color:var(--danger); }
+.checklist-item .note-row { display:flex; gap:8px; margin-top:6px; }
+.checklist-item .note-input { flex:1; padding:7px 10px; border:1px solid var(--danger); border-radius:6px; font-size:13px; display:none; background:#fff5f5; }
+.checklist-item .note-input.show { display:block; }
+
+/* Dashboard tables */
+table { width:100%; border-collapse:collapse; font-size:13px; }
+th { background:var(--bg); padding:10px 12px; text-align:left; font-weight:600; font-size:12px; color:var(--muted); border-bottom:2px solid var(--border); }
+td { padding:10px 12px; border-bottom:1px solid var(--border); }
+tr:hover td { background:#f8fafc; }
+.bar-cell { width:120px; }
+.bar-bg { background:#e2e8f0; border-radius:4px; height:8px; overflow:hidden; }
+.bar-fill { height:100%; border-radius:4px; transition:width .3s; }
+.bar-fill.green { background:var(--success); }
+.bar-fill.yellow { background:var(--warning); }
+.bar-fill.red { background:var(--danger); }
+.badge { padding:2px 8px; border-radius:12px; font-size:11px; font-weight:600; }
+.badge.pass { background:#d1fae5; color:#065f46; }
+.badge.fail { background:#fee2e2; color:#991b1b; }
+.badge.pending { background:#fef3c7; color:#92400e; }
+
+/* Buttons */
+.btn { padding:10px 20px; border-radius:8px; border:none; font-size:14px; font-weight:500; cursor:pointer; transition:all .15s; display:inline-flex; align-items:center; gap:6px; }
+.btn-primary { background:var(--primary); color:#fff; }
+.btn-primary:hover { filter:brightness(1.1); }
+.btn-outline { background:var(--card); border:1px solid var(--border); }
+.btn-outline:hover { background:var(--bg); }
+.btn-success { background:var(--success); color:#fff; }
+.btn-sm { padding:5px 12px; font-size:12px; }
+.btn:disabled { opacity:.5; cursor:not-allowed; }
+
+/* Admin */
+.assign-row { display:flex; gap:12px; align-items:center; padding:10px 0; border-bottom:1px solid var(--border); }
+.assign-row .qlkv-name { min-width:180px; font-weight:500; font-size:14px; }
+.assign-row .store-count { font-size:12px; color:var(--muted); min-width:80px; }
+.assign-row input[type=number] { width:60px; padding:6px 8px; border:1px solid var(--border); border-radius:6px; text-align:center; }
+.assign-row select { padding:6px 10px; border:1px solid var(--border); border-radius:6px; font-size:13px; min-width:200px; }
+.assigned-chips { display:flex; gap:4px; flex-wrap:wrap; }
+.chip { background:var(--primary-light); color:var(--primary); padding:2px 8px; border-radius:12px; font-size:11px; font-weight:500; display:flex; align-items:center; gap:4px; }
+.chip .remove { cursor:pointer; font-weight:700; opacity:.5; }
+.chip .remove:hover { opacity:1; }
+
+/* Summary */
+.summary-section { margin-top:12px; }
+.summary-section h4 { font-size:13px; color:var(--muted); margin-bottom:6px; }
+
+/* Filter bar */
+.filter-bar { display:flex; gap:10px; align-items:center; flex-wrap:wrap; margin-bottom:16px; }
+.filter-bar select, .filter-bar input { padding:10px 14px; border:1px solid var(--border); border-radius:8px; font-size:13px; background:var(--card); color:var(--text); }
+.store-selector select { padding:10px 14px; border:1px solid var(--border); border-radius:8px; font-size:14px; background:var(--card); color:var(--text); min-width:220px; }
+.badge-pill { display:inline-flex; align-items:center; padding:6px 14px; border-radius:20px; font-size:13px; font-weight:600; gap:4px; }
+
+/* Toast */
+.toast { position:fixed; bottom:24px; right:24px; background:#1e293b; color:#fff; padding:12px 24px; border-radius:8px; font-size:14px; opacity:0; transform:translateY(20px); transition:all .3s; z-index:1000; pointer-events:none; }
+.toast.show { opacity:1; transform:translateY(0); }
+
+/* Modal */
+.modal-overlay { display:none; position:fixed; inset:0; background:rgba(0,0,0,.4); z-index:500; justify-content:center; align-items:center; }
+.modal-overlay.show { display:flex; }
+.modal { background:var(--card); border-radius:12px; padding:24px; max-width:500px; width:90%; max-height:80vh; overflow-y:auto; }
+.modal h2 { font-size:18px; margin-bottom:16px; }
+.modal .close { float:right; background:none; border:none; font-size:20px; cursor:pointer; color:var(--muted); }
+
+/* Responsive */
+@media (max-width:768px) {
+  .kpi-row { grid-template-columns:repeat(2,1fr); }
+  .store-selector { flex-direction:column; align-items:stretch; }
+  header { flex-direction:column; gap:8px; }
+}
+</style>
+</head>
+<body>
+<header>
+  <h1>📷 Check Cam Tuân Thủ — WinMart+ Rural MB</h1>
+  <nav>
+    <button onclick="switchTab('check')" class="active" data-tab="check">📝 Check Cam</button>
+    <button onclick="switchTab('dashboard')" data-tab="dashboard">📊 Dashboard</button>
+    <button onclick="switchTab('admin')" data-tab="admin">⚙️ Admin</button>
+    <button onclick="exportData()" style="background:var(--success);border-color:var(--success);color:#fff;">📥 Export</button>
+  </nav>
+</header>
+
+<div class="main-container">
+
+<!-- ===== TAB 1: CHECK CAM ===== -->
+<div class="tab-panel active" id="tab-check">
+  <div class="card">
+    <div class="store-selector">
+      <select id="qlkvSelect" onchange="onQlkvChange()"><option value="">-- Chọn QLKV --</option></select>
+      <select id="storeSelect" onchange="onStoreChange()"><option value="">-- Chọn cửa hàng --</option></select>
+      <span class="badge-pill" style="background:var(--primary-light);color:var(--primary);" id="weekBadge">Tuần 40 (T2-T6)</span>
+      <span class="badge-pill" style="background:#fef2f2;color:var(--danger);">⏰ Deadline: 18h Thứ 6</span>
+    </div>
+
+    <div id="checkProgress" style="display:none;">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;">
+        <div>
+          <strong id="storeNameDisplay" style="font-size:16px;"></strong>
+          <div style="font-size:13px;color:var(--muted);margin-top:2px;" id="storeInfoDisplay"></div>
+        </div>
+        <div style="text-align:right;">
+          <div style="font-size:28px;font-weight:700;" id="progressPercent">0%</div>
+          <div style="font-size:12px;color:var(--muted);" id="progressCount">0/14 đã check</div>
+        </div>
+      </div>
+      <div class="bar-bg" style="height:6px;"><div class="bar-fill green" id="progressBar" style="width:0%"></div></div>
+    </div>
+  </div>
+
+  <div id="checklistContainer"></div>
+
+  <div style="text-align:center;padding:20px;" id="submitArea" >
+    <button class="btn btn-success" onclick="submitCheck()" style="font-size:16px;padding:14px 40px;">📤 Gửi Kết Quả Check</button>
+    <button class="btn btn-primary" onclick="pushToSheet()" style="font-size:14px;padding:10px 24px;margin-left:8px;" id="pushSheetBtn">📊 Push Google Sheet</button>
+    <div style="font-size:12px;color:var(--muted);margin-top:6px;">Kết quả lưu tự động. Gửi trước 18h Thứ 6. Push Sheet để đồng bộ lên Google Sheets.</div>
+    <div id="pushStatus" style="font-size:12px;margin-top:4px;"></div>
+  </div>
+</div>
+
+<!-- ===== TAB 2: DASHBOARD ===== -->
+<div class="tab-panel" id="tab-dashboard">
+  <div class="kpi-row" id="dashKpi"></div>
+
+  <div class="card">
+    <h2>📊 Kết quả theo QLKV — Tuần hiện tại</h2>
+    <div class="filter-bar">
+      <select id="dashGdvFilter" onchange="renderDashboard()"><option value="">Tất cả GĐV</option></select>
+      <span style="font-size:13px;color:var(--muted);" id="dashSummary"></span>
+    </div>
+    <div style="overflow-x:auto;"><table id="dashQlkvTable"><thead><tr><th>QLKV</th><th>GĐV</th><th>CH đã check</th><th>Tiến độ</th><th>% Đạt</th><th>Chi tiết</th></tr></thead><tbody></tbody></table></div>
+  </div>
+
+  <div class="card">
+    <h2>⚠️ Hạng mục yếu nhất (toàn hệ thống)</h2>
+    <div id="weakestItems" style="font-size:13px;"></div>
+  </div>
+
+  <div class="card">
+    <h2>🏪 Chi tiết theo CH</h2>
+    <div style="overflow-x:auto;"><table id="dashStoreTable"><thead><tr><th>CH</th><th>QLKV</th><th>GĐV</th><th>Đã check</th><th>Đạt</th><th>Không đạt</th><th>% Đạt</th></tr></thead><tbody></tbody></table></div>
+  </div>
+</div>
+
+<!-- ===== TAB 3: ADMIN ===== -->
+<div class="tab-panel" id="tab-admin">
+  <div class="card">
+    <h2>⚙️ Phân công Check Cam — Tuần hiện tại</h2>
+    <p style="font-size:13px;color:var(--muted);margin-bottom:16px;">Mỗi QLKV check 2 CH/tuần. Chọn CH từ danh sách hoặc để QLKV tự chọn.</p>
+    <div class="filter-bar">
+      <select id="adminGdvFilter" onchange="renderAdmin()"><option value="">Tất cả GĐV</option></select>
+      <button class="btn btn-outline btn-sm" onclick="autoAssign()">🎲 Tự động phân (2 CH/QLKV)</button>
+      <button class="btn btn-outline btn-sm" onclick="clearAssignments()">🗑 Xóa hết</button>
+    </div>
+    <div id="adminAssignList"></div>
+  </div>
+
+  <div class="card">
+    <h2>📋 Quản lý Checklist Mẫu</h2>
+    <p style="font-size:13px;color:var(--muted);margin-bottom:12px;">Checklist chuẩn từ ảnh — có thể chỉnh sửa nếu cần.</p>
+    <div id="adminChecklistPreview" style="font-size:13px;"></div>
+  </div>
+
+  <div class="card">
+    <h2>🔗 Cấu hình Google Sheets</h2>
+    <p style="font-size:13px;color:var(--muted);margin-bottom:12px;">
+      Cần deploy Code.gs trên Google Apps Script và paste URL Web App vào đây.<br>
+      Hướng dẫn: Mở Apps Script → Deploy → New Deployment → Web App (Execute as: Me, Access: Anyone) → Copy URL
+    </p>
+    <div style="display:flex;gap:10px;align-items:center;">
+      <input type="text" id="gasUrlInput" placeholder="https://script.google.com/macros/s/.../exec" style="flex:1;padding:10px 14px;border:1px solid var(--border);border-radius:8px;font-size:14px;" onchange="saveGasUrl()">
+      <button class="btn btn-outline btn-sm" onclick="testGasConnection()">🔍 Test kết nối</button>
+    </div>
+    <div id="gasStatus" style="font-size:12px;margin-top:8px;"></div>
+  </div>
+</div>
+
+</div>
+
+<div class="toast" id="toast"></div>
+<div class="modal-overlay" id="modalOverlay" onclick="closeModal(event)">
+  <div class="modal" id="modalContent" onclick="event.stopPropagation()"></div>
+</div>
+
+<script>
+// ==================== DATA ====================
+
+// Checklist chuẩn (trích xuất từ ảnh anh Khánh Hòa gửi)
+const CHECKLIST_TEMPLATE = [
+  { group:"I. TÁC PHONG – DIỆN MẠO", items:[
+    {id:"1.1", title:"Đồng phục", desc:"100% NV mặc đúng đồng phục: áo đỏ, quần tối màu, không dép lê. Trang phục sạch sẽ, không ảnh hưởng trải nghiệm KH.", time:"6h–7h / 14h–15h / 19h–20h (chọn 1 khung)"},
+    {id:"1.2", title:"Bảng tên", desc:"100% NV đeo bảng tên đầy đủ, đúng quy định, dễ nhận diện. Bảng tên đeo bên trái dưới chữ Winmart.", time:"6h–7h / 14h–15h / 19h–20h (chọn 1 khung)"},
+    {id:"1.3", title:"Tóc & diện mạo", desc:"Tóc gọn gàng, sạch sẽ; diện mạo lịch sự, phù hợp hình ảnh CH. NV chuyên nghiệp, thân thiện, sẵn sàng phục vụ.", time:"6h–7h / 14h–15h / 19h–20h (chọn 1 khung)"},
+    {id:"1.4", title:"Vị trí & sẵn sàng phục vụ", desc:"NV có mặt đúng vị trí; khu vực thu ngân/khu bán hàng luôn có người sẵn sàng phục vụ.", time:"Giờ cao điểm"},
+    {id:"1.5", title:"Cười chào cảm ơn", desc:"Check camera hành động của NV khi khách vào: có quay lại phía KH và có biểu cảm khẩu hình chào/ cười/ cảm ơn.", time:"Giờ cao điểm"}
+  ]},
+  { group:"II. TUÂN THỦ BASIC", items:[
+    {id:"2.1", title:"ONE SHOT / Push Sale / CTKM", desc:"Check camera các KV trưng bày mã Key: Quầy Thu Ngân, Đảo, Đầu kệ — tuân thủ đúng hướng dẫn trưng bày của Miền.", time:"Trong ngày"},
+    {id:"2.2", title:"Tư vấn CTKM (đối soát bill)", desc:"Check tối đa 3 bill, đối soát camera: NV có giao tiếp, cầm hoặc chỉ vào SP được trưng bày khi tư vấn cho KH.", time:"Theo giờ bill chọn"}
+  ]},
+  { group:"III. TUÂN THỦ QTQĐ", items:[
+    {id:"3.1", title:"Giờ mở/đóng cửa", desc:"Check đúng khung giờ: mở cửa 6h00, đóng cửa 22h30. Xem có mở muộn/đóng sớm không.", time:"6h00 mở / 22h30 đóng"},
+    {id:"3.2", title:"Giờ chấm công CHT", desc:"Lấy theo dữ liệu GTC của CHT. Check giờ vào, giờ về, giờ nghỉ ăn ca.", time:"Theo dữ liệu GTC"},
+    {id:"3.3", title:"Lọc hàng kém CL, hết hạn SD", desc:"Check camera NVCH đi lọc hàng KCL theo thứ tự: Rau củ → Bánh mì → Tủ mát → Trái cây. Cập nhật App hàng khó cuối ngày hoặc đầu ca sáng.", time:"6h30–8h / 12h–14h / 20h30–21h30"},
+    {id:"3.4", title:"Hủy hàng đúng quy trình", desc:"Hủy >100k có ảnh số lượng FF, <100k bấm chặt. Thứ 2 hàng tuần hủy hàng khô. Kiểm tra dữ liệu hủy bất kỳ trong tuần.", time:"Dữ liệu hủy trong tuần"},
+    {id:"3.5", title:"Rút tem giá hết hạn + In bổ sung tem thiếu", desc:"NV ca tối rút tem giá hết KM + bàn tem giá thiếu trả lên quầy. Có hành động đi bàn tem và xả file in tem.", time:"19h30–20h30 hàng ngày"},
+    {id:"3.6", title:"Dàn mặt + Vệ sinh cuối ngày", desc:"Check camera NV ca tối dàn mặt hàng hóa từ 21h30 và vệ sinh sàn.", time:"21h30–22h00"},
+    {id:"3.7", title:"Check date theo lịch Vùng", desc:"CH gửi hình ảnh check date của NV quầy, kết hợp dữ liệu theo dõi date trên App & hình ảnh ben bo KM 3-1, 2-1, 1-1.", time:"Theo lịch Vùng"}
+  ]}
+];
+
+// Store data from Storeslist (populated below)
+let STORE_DATA = [];
+let QLKV_LIST = [];
+
+// ==================== STATE ====================
+const STORAGE_KEY = 'checkcam_data';
+const WEEK_KEY = 'checkcam_week';
+
+function getWeekNumber() {
+  const now = new Date();
+  const start = new Date(now.getFullYear(), 0, 1);
+  return Math.ceil(((now - start) / 86400000 + start.getDay() + 1) / 7);
+}
+
+function getCurrentWeek() { return localStorage.getItem(WEEK_KEY) || String(getWeekNumber()); }
+function setCurrentWeek(w) { localStorage.setItem(WEEK_KEY, w); }
+
+function getData() {
+  try { return JSON.parse(localStorage.getItem(STORAGE_KEY)) || {}; }
+  catch(e) { return {}; }
+}
+function saveData(d) { localStorage.setItem(STORAGE_KEY, JSON.stringify(d)); }
+
+function getWeekData() {
+  const data = getData();
+  const wk = getCurrentWeek();
+  if (!data[wk]) data[wk] = { checks:{}, assignments:{}, results:{} };
+  return { data, wk, weekData: data[wk] };
+}
+
+// ==================== INIT ====================
+// ==================== GAS URL ====================
+function saveGasUrl() {
+  const url = document.getElementById('gasUrlInput').value.trim();
+  localStorage.setItem('checkcam_gas_url', url);
+  toast(url ? '✅ Đã lưu GAS URL' : '🗑 Đã xóa GAS URL');
+}
+
+async function testGasConnection() {
+  const url = document.getElementById('gasUrlInput').value.trim();
+  if (!url) return toast('⚠️ Nhập GAS URL trước');
+  document.getElementById('gasStatus').innerHTML = '<span style="color:var(--muted);">⏳ Đang test...</span>';
+  try {
+    const resp = await fetch(url);
+    const json = await resp.json();
+    if (json.ok) {
+      document.getElementById('gasStatus').innerHTML = `<span style="color:var(--success);">✅ Kết nối OK — Service: ${json.service || 'CheckCam API'}</span>`;
+      toast('✅ Kết nối Google Sheets OK!');
+    } else {
+      throw new Error('API returned not ok');
+    }
+  } catch(e) {
+    document.getElementById('gasStatus').innerHTML = '<span style="color:var(--danger);">❌ Không kết nối được. Kiểm tra URL và deploy Web App.</span>';
+    toast('❌ Test thất bại');
+  }
+}
+
+function init() {
+  loadStoreData();
+  renderChecklist();
+  switchTab('check');
+  renderAdmin();
+  renderDashboard();
+  
+  // Load saved GAS URL
+  const savedUrl = getGasUrl();
+  if (savedUrl) {
+    const input = document.getElementById('gasUrlInput');
+    if (input) input.value = savedUrl;
+  }
+  
+  // Update week badge
+  document.getElementById('weekBadge').textContent = `Tuần ${getCurrentWeek()} (T2-T6)`;
+}
+
+// ==================== STORE DATA ====================
+function loadStoreData() {
+  // This is populated inline from Storeslist — defaults embedded here
+  // In production, fetch from Google Sheets API
+  const qlkvSelect = document.getElementById('qlkvSelect');
+  const adminGdvFilter = document.getElementById('adminGdvFilter');
+  const dashGdvFilter = document.getElementById('dashGdvFilter');
+  
+  // Use localStorage cache or embedded data
+  let cached = null;
+  try { cached = JSON.parse(localStorage.getItem('checkcam_stores')); } catch(e) {}
+  
+  if (cached && cached.length > 0) {
+    STORE_DATA = cached;
+  } else {
+    // Fetch from gviz
+    fetchStoreDataFromSheet();
+    return;
+  }
+  
+  buildQlkvList();
+  populateSelects();
+}
+
+async function fetchStoreDataFromSheet() {
+  try {
+    const url = 'https://docs.google.com/spreadsheets/d/1fMmEm1GC9aei_3oeu2vcadPVsUM9ms9eVhm99d7pF8A/gviz/tq?tqx=out:json&sheet=Storeslist&gid=900581387';
+    const resp = await fetch(url);
+    const text = await resp.text();
+    const json = JSON.parse(text.substring(47, text.length - 2));
+    const rows = json.table.rows;
+    const cols = json.table.cols.map(c => c.label);
+    
+    STORE_DATA = [];
+    for (const row of rows) {
+      const obj = {};
+      row.c.forEach((c, i) => { if (c && c.v !== null) obj[cols[i]] = String(c.v); });
+      if (obj['Tình Trạng'] !== 'Đang hoạt động') continue;
+      if (obj['Miền'] !== 'Miền Bắc') continue;
+      if (!obj['QLKV'] || !obj['QLKV'].trim()) continue;
+      STORE_DATA.push({
+        ma: obj['Mã SAP'] || '',
+        ten: obj['Tên cửa hàng'] || '',
+        tinh: obj['Tỉnh/TP'] || '',
+        qlkv: obj['QLKV'].trim(),
+        gdv: (obj['GĐV'] || '').trim()
+      });
+    }
+    localStorage.setItem('checkcam_stores', JSON.stringify(STORE_DATA));
+    buildQlkvList();
+    populateSelects();
+    renderAdmin();
+    renderDashboard();
+    toast('✅ Đã tải dữ liệu ' + STORE_DATA.length + ' CH Miền Bắc');
+  } catch(e) {
+    toast('⚠️ Không tải được dữ liệu CH, dùng cache nếu có');
+  }
+}
+
+function buildQlkvList() {
+  const map = {};
+  STORE_DATA.forEach(s => {
+    if (!map[s.qlkv]) map[s.qlkv] = { qlkv: s.qlkv, gdv: s.gdv, stores: [], totalStores: 0 };
+    map[s.qlkv].stores.push(s);
+    map[s.qlkv].totalStores++;
+  });
+  QLKV_LIST = Object.values(map).sort((a,b) => a.qlkv.localeCompare(b.qlkv));
+}
+
+function populateSelects() {
+  const qlkvSelect = document.getElementById('qlkvSelect');
+  const adminGdvFilter = document.getElementById('adminGdvFilter');
+  const dashGdvFilter = document.getElementById('dashGdvFilter');
+  
+  qlkvSelect.innerHTML = '<option value="">-- Chọn QLKV --</option>';
+  QLKV_LIST.forEach(q => {
+    qlkvSelect.innerHTML += `<option value="${q.qlkv}">${q.qlkv} (${q.totalStores} CH — GĐV ${q.gdv})</option>`;
+  });
+  
+  const gdvs = [...new Set(QLKV_LIST.map(q => q.gdv))].sort();
+  const gdvOpts = '<option value="">Tất cả GĐV</option>' + gdvs.map(g => `<option value="${g}">${g}</option>`).join('');
+  adminGdvFilter.innerHTML = gdvOpts;
+  dashGdvFilter.innerHTML = gdvOpts;
+}
+
+// ==================== TAB SWITCHING ====================
+function switchTab(tab) {
+  document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('header nav button[data-tab]').forEach(b => b.classList.remove('active'));
+  document.getElementById('tab-' + tab).classList.add('active');
+  document.querySelector(`header nav button[data-tab="${tab}"]`).classList.add('active');
+  if (tab === 'dashboard') renderDashboard();
+  if (tab === 'admin') renderAdmin();
+}
+
+// ==================== CHECK CAM ====================
+function onQlkvChange() {
+  const qlkvName = document.getElementById('qlkvSelect').value;
+  const storeSelect = document.getElementById('storeSelect');
+  storeSelect.innerHTML = '<option value="">-- Chọn cửa hàng --</option>';
+  
+  if (!qlkvName) {
+    document.getElementById('checkProgress').style.display = 'none';
+    document.getElementById('checklistContainer').innerHTML = '';
+    document.getElementById('submitArea').style.display = 'none';
+    return;
+  }
+  
+  const qlkv = QLKV_LIST.find(q => q.qlkv === qlkvName);
+  if (!qlkv) return;
+  
+  // Show stores — highlight assigned ones
+  const { weekData } = getWeekData();
+  const assigned = weekData.assignments[qlkvName] || [];
+  
+  // Default: show all stores, mark assigned
+  qlkv.stores.forEach(s => {
+    const sel = assigned.includes(s.ma) ? ' selected' : '';
+    storeSelect.innerHTML += `<option value="${s.ma}"${sel}>${s.ma} — ${s.ten} (${s.tinh})</option>`;
+  });
+  
+  if (assigned.length > 0) {
+    storeSelect.value = assigned[0];
+    onStoreChange();
+  }
+  
+  document.getElementById('submitArea').style.display = 'block';
+}
+
+function onStoreChange() {
+  const storeMa = document.getElementById('storeSelect').value;
+  if (!storeMa) {
+    document.getElementById('checkProgress').style.display = 'none';
+    document.getElementById('checklistContainer').innerHTML = '';
+    return;
+  }
+  
+  const store = STORE_DATA.find(s => s.ma === storeMa);
+  if (!store) return;
+  
+  document.getElementById('checkProgress').style.display = 'block';
+  document.getElementById('storeNameDisplay').textContent = store.ten;
+  document.getElementById('storeInfoDisplay').textContent = `Mã: ${store.ma} | ${store.tinh} | QLKV: ${store.qlkv} | GĐV: ${store.gdv}`;
+  
+  loadCheckResults(storeMa);
+  updateProgress(storeMa);
+}
+
+function renderChecklist() {
+  const container = document.getElementById('checklistContainer');
+  container.innerHTML = CHECKLIST_TEMPLATE.map(group => `
+    <div class="checklist-group">
+      <div class="checklist-group-header">
+        <span>${group.group}</span>
+        <span style="font-size:12px;color:var(--muted);">${group.items.length} hạng mục</span>
+      </div>
+      ${group.items.map(item => `
+        <div class="checklist-item" data-id="${item.id}">
+          <div class="item-num">${item.id}</div>
+          <div class="item-body">
+            <div class="item-title">${item.title}</div>
+            <div class="item-desc">${item.desc}</div>
+            <span class="item-time">📹 Xem footage: ${item.time}</span>
+            <input class="note-input" placeholder="Ghi chú (bắt buộc nếu Không đạt)..." data-item="${item.id}">
+          </div>
+          <div class="item-actions">
+            <button class="status-btn pass" data-item="${item.id}" data-status="pass" onclick="setStatus('${item.id}','pass')">✅ Đạt</button>
+            <button class="status-btn fail" data-item="${item.id}" data-status="fail" onclick="setStatus('${item.id}','fail')">❌ Không đạt</button>
+          </div>
+          <div class="note-row">
+            <input class="note-input" placeholder="Nhập ghi chú lý do Không đạt..." data-item="${item.id}">
+          </div>
+        </div>
+      `).join('')}
+    </div>
+  `).join('');
+}
+
+function loadCheckResults(storeMa) {
+  const { weekData } = getWeekData();
+  const results = weekData.results[storeMa] || {};
+  
+  document.querySelectorAll('.checklist-item').forEach(el => {
+    const itemId = el.dataset.id;
+    const passBtn = el.querySelector('.status-btn.pass');
+    const failBtn = el.querySelector('.status-btn.fail');
+    const noteInput = el.querySelector('.note-input');
+    
+    passBtn.classList.remove('selected');
+    failBtn.classList.remove('selected');
+    noteInput.classList.remove('show');
+    noteInput.value = '';
+    
+    if (results[itemId]) {
+      if (results[itemId].status === 'pass') {
+        passBtn.classList.add('selected');
+      } else {
+        failBtn.classList.add('selected');
+        noteInput.classList.add('show');
+        noteInput.value = results[itemId].note || '';
+      }
+    }
+  });
+}
+
+function setStatus(itemId, status) {
+  const storeMa = document.getElementById('storeSelect').value;
+  if (!storeMa) return toast('⚠️ Vui lòng chọn CH trước');
+  
+  const { data, wk, weekData } = getWeekData();
+  if (!weekData.results[storeMa]) weekData.results[storeMa] = {};
+  
+  const el = document.querySelector(`.checklist-item[data-id="${itemId}"]`);
+  const passBtn = el.querySelector('.status-btn.pass');
+  const failBtn = el.querySelector('.status-btn.fail');
+  const noteInput = el.querySelector('.note-input');
+  
+  passBtn.classList.remove('selected');
+  failBtn.classList.remove('selected');
+  noteInput.classList.remove('show');
+  
+  if (status === 'pass') {
+    passBtn.classList.add('selected');
+    weekData.results[storeMa][itemId] = { status: 'pass', note: '', timestamp: new Date().toISOString() };
+  } else {
+    failBtn.classList.add('selected');
+    noteInput.classList.add('show');
+    noteInput.focus();
+    weekData.results[storeMa][itemId] = { status: 'fail', note: noteInput.value || '', timestamp: new Date().toISOString() };
+  }
+  
+  saveData(data);
+  updateProgress(storeMa);
+}
+
+// Auto-save notes on input
+document.addEventListener('input', function(e) {
+  if (!e.target.classList.contains('note-input')) return;
+  const itemId = e.target.dataset.item;
+  const storeMa = document.getElementById('storeSelect').value;
+  if (!storeMa) return;
+  const { data, weekData } = getWeekData();
+  if (weekData.results[storeMa] && weekData.results[storeMa][itemId]) {
+    weekData.results[storeMa][itemId].note = e.target.value;
+    saveData(data);
+  }
+});
+
+function updateProgress(storeMa) {
+  const { weekData } = getWeekData();
+  const results = weekData.results[storeMa] || {};
+  const totalItems = 14;
+  const checked = Object.keys(results).length;
+  const pct = Math.round(checked / totalItems * 100);
+  
+  document.getElementById('progressPercent').textContent = pct + '%';
+  document.getElementById('progressCount').textContent = `${checked}/${totalItems} đã check`;
+  document.getElementById('progressBar').style.width = pct + '%';
+  
+  if (pct >= 80) document.getElementById('progressBar').className = 'bar-fill green';
+  else if (pct >= 40) document.getElementById('progressBar').className = 'bar-fill yellow';
+  else document.getElementById('progressBar').className = 'bar-fill red';
+}
+
+function submitCheck() {
+  const storeMa = document.getElementById('storeSelect').value;
+  if (!storeMa) return toast('⚠️ Vui lòng chọn CH');
+  
+  const { data, wk, weekData } = getWeekData();
+  const results = weekData.results[storeMa] || {};
+  
+  const allItems = CHECKLIST_TEMPLATE.flatMap(g => g.items.map(i => i.id));
+  
+  // Check all items have been evaluated
+  const missingNote = allItems.filter(id => {
+    return results[id] && results[id].status === 'fail' && !results[id].note;
+  });
+  
+  if (missingNote.length > 0) {
+    return toast('⚠️ Vui lòng nhập ghi chú cho tất cả hạng mục "Không đạt"');
+  }
+  
+  const checkedCount = Object.keys(results).length;
+  if (checkedCount === 0) {
+    return toast('⚠️ Vui lòng check ít nhất 1 hạng mục');
+  }
+  
+  // Mark as submitted
+  if (!weekData.checks[storeMa]) weekData.checks[storeMa] = {};
+  weekData.checks[storeMa].submitted = true;
+  weekData.checks[storeMa].submittedAt = new Date().toISOString();
+  weekData.checks[storeMa].qlkv = document.getElementById('qlkvSelect').value;
+  
+  saveData(data);
+  
+  const passCount = allItems.filter(id => results[id] && results[id].status === 'pass').length;
+  const failCount = allItems.filter(id => results[id] && results[id].status === 'fail').length;
+  
+  toast(`✅ Đã gửi! ${passCount} Đạt / ${failCount} Không đạt / ${14 - checkedCount} chưa check`);
+  
+  // Auto-push to sheet if configured
+  const gasUrl = getGasUrl();
+  if (gasUrl) {
+    setTimeout(() => pushToSheet(), 500);
+  }
+}
+
+// ==================== GOOGLE SHEETS PUSH ====================
+function getGasUrl() {
+  return localStorage.getItem('checkcam_gas_url') || '';
+}
+
+async function pushToSheet() {
+  const storeMa = document.getElementById('storeSelect').value;
+  if (!storeMa) return toast('⚠️ Vui lòng chọn CH');
+  
+  const gasUrl = getGasUrl();
+  if (!gasUrl) {
+    document.getElementById('pushStatus').innerHTML = '<span style="color:var(--warning);">⚠️ Chưa cấu hình GAS_URL. Vào tab Admin để thiết lập.</span>';
+    return;
+  }
+  
+  const { weekData, wk } = getWeekData();
+  const results = weekData.results[storeMa] || {};
+  const store = STORE_DATA.find(s => s.ma === storeMa) || {};
+  const qlkv = document.getElementById('qlkvSelect').value;
+  
+  // Build results array
+  const resultRows = [];
+  const allItems = CHECKLIST_TEMPLATE.flatMap(g => g.items.map(i => ({...i, group: g.group})));
+  allItems.forEach(item => {
+    if (results[item.id]) {
+      resultRows.push({
+        id: item.id,
+        title: item.title,
+        group: item.group,
+        status: results[item.id].status,
+        note: results[item.id].note || '',
+        time: item.time,
+        timestamp: results[item.id].timestamp || ''
+      });
+    }
+  });
+  
+  if (resultRows.length === 0) {
+    return toast('⚠️ Chưa có dữ liệu check để push');
+  }
+  
+  document.getElementById('pushStatus').innerHTML = '<span style="color:var(--muted);">⏳ Đang push lên Google Sheets...</span>';
+  
+  try {
+    const resp = await fetch(gasUrl, {
+      method: 'POST',
+      body: JSON.stringify({
+        action: 'submit',
+        week: wk,
+        qlkv: qlkv,
+        store: {
+          ma: storeMa,
+          ten: store.ten || '',
+          tinh: store.tinh || '',
+          gdv: store.gdv || ''
+        },
+        results: resultRows
+      })
+    });
+    const json = await resp.json();
+    if (json.ok) {
+      document.getElementById('pushStatus').innerHTML = `<span style="color:var(--success);">✅ Đã push ${json.rowsWritten} dòng lên sheet "${json.sheet}"!</span>`;
+      toast(`✅ Đã push ${json.rowsWritten} dòng lên Google Sheets`);
+    } else {
+      throw new Error(json.error || 'Unknown error');
+    }
+  } catch(e) {
+    document.getElementById('pushStatus').innerHTML = `<span style="color:var(--danger);">❌ Lỗi push: ${e.message}. Kiểm tra GAS_URL trong tab Admin.</span>`;
+    toast('❌ Push thất bại. Kiểm tra GAS_URL.');
+  }
+}
+
+// ==================== DASHBOARD ====================
+function renderDashboard() {
+  const { weekData } = getWeekData();
+  const gdvFilter = document.getElementById('dashGdvFilter').value;
+  
+  // KPI
+  let totalChecks = 0, totalPass = 0, totalFail = 0;
+  const allItems = CHECKLIST_TEMPLATE.flatMap(g => g.items.map(i => i.id));
+  
+  Object.values(weekData.results).forEach(r => {
+    allItems.forEach(id => {
+      if (r[id]) { totalChecks++; if (r[id].status === 'pass') totalPass++; else totalFail++; }
+    });
+  });
+  
+  const passRate = totalChecks > 0 ? Math.round(totalPass / totalChecks * 100) : 0;
+  const submittedCount = Object.values(weekData.checks).filter(c => c.submitted).length;
+  
+  document.getElementById('dashKpi').innerHTML = `
+    <div class="kpi-card blue"><div class="kpi-val">${Object.keys(weekData.results).length}</div><div class="kpi-label">CH đã có dữ liệu</div></div>
+    <div class="kpi-card green"><div class="kpi-val">${totalPass}</div><div class="kpi-label">Lượt Đạt</div><div class="kpi-sub">${totalChecks} lượt check</div></div>
+    <div class="kpi-card red"><div class="kpi-val">${totalFail}</div><div class="kpi-label">Lượt Không đạt</div></div>
+    <div class="kpi-card ${passRate >= 80 ? 'green' : passRate >= 50 ? '' : 'red'}"><div class="kpi-val">${passRate}%</div><div class="kpi-label">Tỷ lệ Đạt</div><div class="kpi-sub">${submittedCount} CH đã gửi</div></div>
+  `;
+  
+  document.getElementById('dashSummary').textContent = `Tuần ${getCurrentWeek()} — ${Object.keys(weekData.results).length} CH có dữ liệu`;
+  
+  // QLKV table
+  const qlkvRows = QLKV_LIST.map(q => {
+    // Get assigned stores
+    const assigned = weekData.assignments[q.qlkv] || [];
+    const checkedStores = assigned.filter(ma => weekData.results[ma] && Object.keys(weekData.results[ma]).length > 0);
+    const submittedStores = assigned.filter(ma => weekData.checks[ma] && weekData.checks[ma].submitted);
+    
+    let qPass = 0, qFail = 0, qChecked = 0;
+    assigned.forEach(ma => {
+      const r = weekData.results[ma] || {};
+      allItems.forEach(id => {
+        if (r[id]) { qChecked++; if (r[id].status === 'pass') qPass++; else qFail++; }
+      });
+    });
+    
+    const qRate = qChecked > 0 ? Math.round(qPass / qChecked * 100) : 0;
+    const qProgress = assigned.length > 0 ? Math.round(checkedStores.length / assigned.length * 100) : 0;
+    
+    if (gdvFilter && q.gdv !== gdvFilter) return null;
+    
+    return `<tr>
+      <td><strong>${q.qlkv}</strong></td>
+      <td>${q.gdv}</td>
+      <td>${checkedStores.length}/${assigned.length || 0} <span class="badge ${submittedStores.length > 0 ? 'pass' : 'pending'}">${submittedStores.length} gửi</span></td>
+      <td class="bar-cell"><div class="bar-bg"><div class="bar-fill ${qProgress >= 80 ? 'green' : qProgress >= 40 ? 'yellow' : 'red'}" style="width:${qProgress}%"></div></div> ${qProgress}%</td>
+      <td><strong style="color:${qRate >= 80 ? 'var(--success)' : qRate >= 50 ? 'var(--warning)' : 'var(--danger)'}">${qRate}%</strong> (${qPass}/${qChecked})</td>
+      <td><button class="btn btn-outline btn-sm" onclick="showDetail('${q.qlkv}')">Xem</button></td>
+    </tr>`;
+  }).filter(Boolean);
+  
+  document.querySelector('#dashQlkvTable tbody').innerHTML = qlkvRows.join('') || '<tr><td colspan="6" style="text-align:center;color:var(--muted);padding:20px;">Chưa có dữ liệu tuần này</td></tr>';
+  
+  // Weakest items (across all stores)
+  const itemStats = {};
+  allItems.forEach(id => { itemStats[id] = { pass:0, fail:0, title: '' }; });
+  CHECKLIST_TEMPLATE.forEach(g => g.items.forEach(it => { itemStats[it.id].title = it.title; }));
+  
+  Object.values(weekData.results).forEach(r => {
+    allItems.forEach(id => {
+      if (r[id]) {
+        if (r[id].status === 'pass') itemStats[id].pass++;
+        else itemStats[id].fail++;
+      }
+    });
+  });
+  
+  const weakest = Object.entries(itemStats)
+    .map(([id, s]) => ({ id, ...s, total: s.pass + s.fail, rate: s.total > 0 ? s.pass / s.total : 1 }))
+    .filter(s => s.total > 0)
+    .sort((a,b) => a.rate - b.rate)
+    .slice(0, 5);
+  
+  document.getElementById('weakestItems').innerHTML = weakest.length > 0 
+    ? weakest.map((w,i) => `<div style="display:flex;align-items:center;gap:12px;padding:8px 0;border-bottom:1px solid var(--border);">
+        <span style="font-weight:600;min-width:24px;">#${i+1}</span>
+        <span style="flex:1;">${w.id} — ${w.title}</span>
+        <span style="color:var(--danger);font-weight:600;">${Math.round((1-w.rate)*100)}% K.Đạt</span>
+        <span style="color:var(--muted);font-size:12px;">(${w.fail}/${w.total} lượt)</span>
+      </div>`).join('')
+    : '<p style="color:var(--muted);padding:12px;">Chưa đủ dữ liệu để phân tích</p>';
+  
+  // Store detail table
+  const storeRows = [];
+  Object.entries(weekData.results).forEach(([ma, r]) => {
+    const store = STORE_DATA.find(s => s.ma === ma) || { ten: ma, qlkv: '?', gdv: '?' };
+    const sPass = allItems.filter(id => r[id] && r[id].status === 'pass').length;
+    const sFail = allItems.filter(id => r[id] && r[id].status === 'fail').length;
+    const sChecked = sPass + sFail;
+    const sRate = sChecked > 0 ? Math.round(sPass / sChecked * 100) : 0;
+    if (gdvFilter && store.gdv !== gdvFilter) return;
+    storeRows.push({ ma, ten: store.ten, qlkv: store.qlkv, gdv: store.gdv, checked: sChecked, pass: sPass, fail: sFail, rate: sRate });
+  });
+  storeRows.sort((a,b) => a.rate - b.rate);
+  
+  document.querySelector('#dashStoreTable tbody').innerHTML = storeRows.length > 0
+    ? storeRows.map(s => `<tr>
+        <td><strong>${s.ten}</strong><br><span style="font-size:11px;color:var(--muted);">${s.ma}</span></td>
+        <td>${s.qlkv}</td><td>${s.gdv}</td>
+        <td>${s.checked}/14</td>
+        <td><span class="badge pass">${s.pass}</span></td>
+        <td><span class="badge fail">${s.fail}</span></td>
+        <td><strong style="color:${s.rate >= 80 ? 'var(--success)' : s.rate >= 50 ? 'var(--warning)' : 'var(--danger)'}">${s.rate}%</strong></td>
+      </tr>`).join('')
+    : '<tr><td colspan="7" style="text-align:center;color:var(--muted);padding:20px;">Chưa có CH nào được check</td></tr>';
+}
+
+function showDetail(qlkvName) {
+  const { weekData } = getWeekData();
+  const allItems = CHECKLIST_TEMPLATE.flatMap(g => g.items.map(i => i.id));
+  const assigned = weekData.assignments[qlkvName] || [];
+  
+  let html = `<h2>📋 Chi tiết: ${qlkvName}</h2>`;
+  assigned.forEach(ma => {
+    const r = weekData.results[ma] || {};
+    const store = STORE_DATA.find(s => s.ma === ma) || { ten: ma };
+    const sPass = allItems.filter(id => r[id] && r[id].status === 'pass').length;
+    const sFail = allItems.filter(id => r[id] && r[id].status === 'fail').length;
+    html += `<div style="margin-bottom:16px;border:1px solid var(--border);border-radius:8px;padding:12px;">
+      <strong>${store.ten}</strong> (${ma}) — ${sPass}✅ / ${sFail}❌
+      <div style="font-size:12px;margin-top:6px;">`;
+    allItems.forEach(id => {
+      if (r[id]) {
+        const icon = r[id].status === 'pass' ? '✅' : '❌';
+        html += `<div>${icon} ${id} — ${r[id].note || ''}</div>`;
+      }
+    });
+    html += `</div></div>`;
+  });
+  
+  if (assigned.length === 0) html += '<p style="color:var(--muted);">Chưa phân công CH cho QLKV này</p>';
+  
+  document.getElementById('modalContent').innerHTML = html + `<button class="btn btn-outline btn-sm" onclick="closeModal()" style="margin-top:12px;">Đóng</button>`;
+  document.getElementById('modalOverlay').classList.add('show');
+}
+
+// ==================== ADMIN ====================
+function renderAdmin() {
+  const { weekData } = getWeekData();
+  const gdvFilter = document.getElementById('adminGdvFilter').value;
+  
+  let qlkvs = QLKV_LIST;
+  if (gdvFilter) qlkvs = qlkvs.filter(q => q.gdv === gdvFilter);
+  
+  document.getElementById('adminAssignList').innerHTML = qlkvs.map(q => {
+    const assigned = weekData.assignments[q.qlkv] || [];
+    const chips = assigned.map(ma => {
+      const s = q.stores.find(st => st.ma === ma);
+      return `<span class="chip">${ma}${s ? ' — ' + s.ten.substring(0,20) : ''}<span class="remove" onclick="removeAssign('${q.qlkv}','${ma}')">×</span></span>`;
+    }).join('');
+    
+    const storeOpts = q.stores.map(s => 
+      `<option value="${s.ma}" ${assigned.includes(s.ma) ? 'disabled' : ''}>${s.ma} — ${s.ten} (${s.tinh})</option>`
+    ).join('');
+    
+    return `<div class="assign-row">
+      <div class="qlkv-name">${q.qlkv}</div>
+      <div class="store-count">${q.totalStores} CH | GĐV: ${q.gdv}</div>
+      <select onchange="addAssign('${q.qlkv}', this.value); this.value='';" ${assigned.length >= 2 ? 'disabled' : ''}>
+        <option value="">+ Thêm CH (${assigned.length}/2)</option>
+        ${storeOpts}
+      </select>
+      <div class="assigned-chips">${chips || '<span style="font-size:12px;color:var(--muted);">Chưa chọn CH</span>'}</div>
+    </div>`;
+  }).join('');
+  
+  // Checklist preview
+  document.getElementById('adminChecklistPreview').innerHTML = CHECKLIST_TEMPLATE.map(g => `
+    <div style="margin-bottom:8px;"><strong>${g.group}</strong> (${g.items.length} mục)</div>
+    ${g.items.map(it => `<div style="padding:4px 0 4px 16px;font-size:12px;">${it.id}. ${it.title} — <span style="color:var(--muted);">📹 ${it.time}</span></div>`).join('')}
+  `).join('');
+}
+
+function addAssign(qlkvName, storeMa) {
+  if (!storeMa) return;
+  const { data, weekData } = getWeekData();
+  if (!weekData.assignments[qlkvName]) weekData.assignments[qlkvName] = [];
+  if (weekData.assignments[qlkvName].length >= 2) return toast('⚠️ Tối đa 2 CH/QLKV/tuần');
+  if (weekData.assignments[qlkvName].includes(storeMa)) return;
+  weekData.assignments[qlkvName].push(storeMa);
+  saveData(data);
+  renderAdmin();
+  toast('✅ Đã thêm CH');
+}
+
+function removeAssign(qlkvName, storeMa) {
+  const { data, weekData } = getWeekData();
+  if (!weekData.assignments[qlkvName]) return;
+  weekData.assignments[qlkvName] = weekData.assignments[qlkvName].filter(m => m !== storeMa);
+  saveData(data);
+  renderAdmin();
+}
+
+function autoAssign() {
+  const { data, weekData } = getWeekData();
+  let count = 0;
+  QLKV_LIST.forEach(q => {
+    const stores = [...q.stores].sort(() => Math.random() - 0.5);
+    weekData.assignments[q.qlkv] = stores.slice(0, 2).map(s => s.ma);
+    count++;
+  });
+  saveData(data);
+  renderAdmin();
+  toast(`✅ Đã phân ngẫu nhiên 2 CH cho ${count} QLKV`);
+}
+
+function clearAssignments() {
+  if (!confirm('Xóa tất cả phân công tuần này?')) return;
+  const { data, weekData } = getWeekData();
+  weekData.assignments = {};
+  saveData(data);
+  renderAdmin();
+  toast('🗑 Đã xóa tất cả phân công');
+}
+
+// ==================== EXPORT ====================
+function exportData() {
+  const { weekData } = getWeekData();
+  const allItems = CHECKLIST_TEMPLATE.flatMap(g => g.items.map(i => i.id));
+  
+  let csv = 'CH Mã,CH Tên,QLKV,GĐV,Tỉnh,Hạng mục,Trạng thái,Ghi chú,Ngày check\n';
+  
+  Object.entries(weekData.results).forEach(([ma, r]) => {
+    const store = STORE_DATA.find(s => s.ma === ma) || {};
+    allItems.forEach(id => {
+      if (r[id]) {
+        csv += `${ma},"${store.ten || ''}",${store.qlkv || ''},${store.gdv || ''},${store.tinh || ''},${id},${r[id].status === 'pass' ? 'Đạt' : 'Không đạt'},"${(r[id].note || '').replace(/"/g,'""')}",${r[id].timestamp || ''}\n`;
+      }
+    });
+  });
+  
+  const blob = new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8;' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `CheckCam_Tuan${getCurrentWeek()}_${new Date().toISOString().slice(0,10)}.csv`;
+  a.click();
+  URL.revokeObjectURL(url);
+  toast('📥 Đã export CSV!');
+}
+
+// ==================== MODAL ====================
+function closeModal(e) {
+  if (e && e.target !== document.getElementById('modalOverlay')) return;
+  document.getElementById('modalOverlay').classList.remove('show');
+}
+
+// ==================== TOAST ====================
+function toast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  clearTimeout(t._timeout);
+  t._timeout = setTimeout(() => t.classList.remove('show'), 2500);
+}
+
+// ==================== INIT ====================
+window.addEventListener('DOMContentLoaded', init);
+
+// Keyboard shortcut for closing modal
+document.addEventListener('keydown', e => { if (e.key === 'Escape') closeModal(); });
+</script>
+</body>
+</html>
