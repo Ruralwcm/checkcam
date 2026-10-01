@@ -157,7 +157,7 @@ tr:hover td { background:#f8fafc; }
 </head>
 <body>
 <header>
-  <h1>📷 Check Cam Tuân Thủ v<span id="appVersion">1.4.2</span></h1>
+  <h1>📷 Check Cam Tuân Thủ v<span id="appVersion">1.5.0</span></h1>
   <nav>
     <button onclick="switchTab('check')" class="active" data-tab="check">📝 Check Cam</button>
     <button onclick="switchTab('dashboard')" data-tab="dashboard">📊 Dashboard</button>
@@ -214,22 +214,30 @@ tr:hover td { background:#f8fafc; }
   <div class="kpi-row" id="dashKpi"></div>
 
   <div class="card">
-    <h2>📊 Kết quả theo QLKV — Tuần hiện tại</h2>
+    <h2>📊 Kết quả Check Cam <span id="dashBreadcrumb" style="font-size:12px;color:var(--muted);font-weight:400;"></span></h2>
     <div class="filter-bar">
+      <select id="dashGroupBy" onchange="renderDashboard()">
+        <option value="gdv">Nhóm theo GĐV</option>
+        <option value="tinh">Nhóm theo Tỉnh/TP</option>
+      </select>
       <select id="dashGdvFilter" onchange="renderDashboard()"><option value="">Tất cả GĐV</option></select>
+      <select id="dashTinhFilter" onchange="renderDashboard()" style="display:none;"><option value="">Tất cả Tỉnh/TP</option></select>
       <span style="font-size:13px;color:var(--muted);" id="dashSummary"></span>
+      <span style="flex:1;"></span>
+      <button class="btn btn-outline btn-sm" onclick="expandAll()">📂 Mở tất cả</button>
+      <button class="btn btn-outline btn-sm" onclick="collapseAll()">📁 Thu gọn</button>
     </div>
-    <div style="overflow-x:auto;"><table id="dashQlkvTable"><thead><tr><th>QLKV</th><th>GĐV</th><th>CH đã check</th><th>Tiến độ</th><th>% Đạt</th><th>Chi tiết</th></tr></thead><tbody></tbody></table></div>
+    <div style="overflow-x:auto;">
+      <table id="dashDrillTable">
+        <thead><tr><th style="width:30px;"></th><th>Tên</th><th>CH</th><th>Tiến độ</th><th>Đạt</th><th>K.Đạt</th><th>% Đạt</th><th>⚠️</th></tr></thead>
+        <tbody></tbody>
+      </table>
+    </div>
   </div>
 
   <div class="card">
     <h2>⚠️ Hạng mục yếu nhất (toàn hệ thống)</h2>
     <div id="weakestItems" style="font-size:13px;"></div>
-  </div>
-
-  <div class="card">
-    <h2>🏪 Chi tiết theo CH</h2>
-    <div style="overflow-x:auto;"><table id="dashStoreTable"><thead><tr><th>CH</th><th>QLKV</th><th>GĐV</th><th>Đã check</th><th>Đạt</th><th>Không đạt</th><th>% Đạt</th></tr></thead><tbody></tbody></table></div>
   </div>
 </div>
 
@@ -1235,13 +1243,16 @@ async function pushToSheet() {
 }
 
 // ==================== DASHBOARD ====================
+// Drill-down state
+let expandedRows = {};
+
 function renderDashboard() {
   const tasks = getTasks();
   const allItems = CHECKLIST_TEMPLATE.flatMap(g => g.items.map(i => i.id));
   const taskId = getActiveTaskId();
   const { taskData } = td();
   
-  // KPI — show active task or overview
+  // KPI
   let totalChecks = 0, totalPass = 0, totalFail = 0;
   if (taskData) {
     Object.values(taskData.results).forEach(r => {
@@ -1260,173 +1271,211 @@ function renderDashboard() {
     <div class="kpi-card ${passRate >= 80 ? 'green' : passRate >= 50 ? '' : 'red'}"><div class="kpi-val">${totalChecks > 0 ? passRate + '%' : '-'}</div><div class="kpi-label">Tỷ lệ Đạt</div><div class="kpi-sub">${submittedCount} CH đã gửi</div></div>
   `;
   
-  // Task selection for dashboard
-  const dashGdvHtml = tasks.length > 0
-    ? `<select id="dashTaskFilter" onchange="setActiveTaskId(this.value);renderDashboard();refreshTaskSelectors();">
+  // Show/hide tinh filter based on group-by
+  const groupBy = document.getElementById('dashGroupBy')?.value || 'gdv';
+  document.getElementById('dashTinhFilter').style.display = groupBy === 'tinh' ? 'inline-block' : 'none';
+  document.getElementById('dashGdvFilter').style.display = groupBy === 'gdv' ? 'inline-block' : 'none';
+  
+  // Task selector
+  document.getElementById('dashSummary').innerHTML = tasks.length > 0
+    ? `<select id="dashTaskFilter" onchange="setActiveTaskId(this.value);renderDashboard();refreshTaskSelectors();" style="padding:8px 12px;border:1px solid var(--border);border-radius:8px;">
         <option value="">-- Tất cả Task --</option>
-        ${tasks.map(t => `<option value="${t.id}" ${t.id === taskId ? 'selected' : ''}>${t.status === 'active' ? '🟢' : '✅'} ${t.name}</option>`).join('')}
-      </select>`
+        ${tasks.map(t => `<option value="${t.id}" ${t.id===taskId?'selected':''}>${t.status==='active'?'🟢':'✅'} ${t.name}</option>`).join('')}</select>`
     : '';
   
-  document.getElementById('dashSummary').innerHTML = `${dashGdvHtml} <span style="font-size:13px;color:var(--muted);">${taskId ? '' : 'Chọn Task để xem chi tiết'}</span>`;
+  document.getElementById('dashBreadcrumb').textContent = taskId ? '' : '(Chọn Task để xem chi tiết)';
   
-  if (!taskData) {
-    // Show task overview cards
-    document.querySelector('#dashQlkvTable tbody').innerHTML = tasks.length > 0
-      ? tasks.sort((a,b) => b.created.localeCompare(a.created)).map(t => {
-        const qlkvCount = Object.keys(t.assignments||{}).filter(k => (t.assignments[k]||[]).length > 0).length;
-        const totalAssigned = Object.values(t.assignments||{}).flat().length;
-        let tPass = 0, tFail = 0;
-        Object.values(t.results||{}).forEach(r => allItems.forEach(id => { if(r[id]){ if(r[id].status==='pass')tPass++;else tFail++;} }));
-        const tRate = (tPass+tFail) > 0 ? Math.round(tPass/(tPass+tFail)*100) : 0;
-        return `<tr style="cursor:pointer;" onclick="setActiveTaskId('${t.id}');renderDashboard();refreshTaskSelectors();">
-          <td><strong>${t.status === 'active' ? '🟢' : '✅'} ${t.name}</strong></td>
-          <td>${qlkvCount} QLKV · ${totalAssigned} CH</td>
-          <td class="bar-cell"><div class="bar-bg"><div class="bar-fill ${tRate>=80?'green':tRate>=40?'yellow':'red'}" style="width:${tRate}%"></div></div> ${tRate}%</td>
-          <td>${t.deadline ? formatDateTime(new Date(t.deadline)) : '—'}</td>
-          <td><span class="badge ${t.status==='active'?'pending':'pass'}">${t.status==='active'?'Active':'Done'}</span></td>
-        </tr>`;
-      }).join('')
-      : '<tr><td colspan="5" style="text-align:center;color:var(--muted);padding:20px;">Chưa có Task nào. Vào Admin để tạo Task.</td></tr>';
-    
-    document.getElementById('weakestItems').innerHTML = '<p style="color:var(--muted);padding:12px;">Chọn Task để xem phân tích chi tiết</p>';
-    document.querySelector('#dashStoreTable tbody').innerHTML = '<tr><td colspan="7" style="text-align:center;color:var(--muted);padding:20px;">Chọn Task để xem chi tiết CH</td></tr>';
-    
-    // Hide task-specific sections
-    const auditCard = document.getElementById('auditAlerts');
-    if (auditCard) auditCard.style.display = 'none';
+  const tbody = document.querySelector('#dashDrillTable tbody');
+  if (!taskData || Object.keys(taskData.assignments||{}).filter(k => (taskData.assignments[k]||[]).length > 0).length === 0) {
+    tbody.innerHTML = `<tr><td colspan="8" style="text-align:center;color:var(--muted);padding:24px;">
+      ${taskId ? 'Chưa có dữ liệu check. Vào Admin để phân công CH.' : 'Chọn Task để xem chi tiết drill-down.'}</td></tr>`;
+    document.getElementById('weakestItems').innerHTML = '<p style="color:var(--muted);padding:12px;">Chưa đủ dữ liệu</p>';
     return;
   }
   
-  // Show audit card
-  const auditAlertsCard = document.getElementById('auditAlerts');
-  if (auditAlertsCard) auditAlertsCard.style.display = 'block';
-  
-  // QLKV table for active task
+  // Build drill-down rows
+  const rows = [];
   const gdvFilter = document.getElementById('dashGdvFilter')?.value || '';
-  const qlkvRows = QLKV_LIST.map(q => {
-    const assigned = taskData.assignments[q.qlkv] || [];
-    const checkedStores = assigned.filter(ma => taskData.results[ma] && Object.keys(taskData.results[ma]).length > 0);
-    const submittedStores = assigned.filter(ma => taskData.checks[ma] && taskData.checks[ma].submitted);
-    
-    let qPass = 0, qFail = 0, qChecked = 0;
-    assigned.forEach(ma => {
-      const r = taskData.results[ma] || {};
-      allItems.forEach(id => { if (r[id]) { qChecked++; if (r[id].status === 'pass') qPass++; else qFail++; } });
+  const tinhFilter = document.getElementById('dashTinhFilter')?.value || '';
+  
+  if (groupBy === 'gdv') {
+    // Level 1: Group by GĐV
+    const gdvGroups = {};
+    QLKV_LIST.forEach(q => {
+      const assigned = taskData.assignments[q.qlkv] || [];
+      if (!assigned.length) return;
+      if (gdvFilter && q.gdv !== gdvFilter) return;
+      if (!gdvGroups[q.gdv]) gdvGroups[q.gdv] = { qlkvs: [], totalStores: 0, checkedStores: 0, pass: 0, fail: 0, submitted: 0 };
+      const g = gdvGroups[q.gdv];
+      let gChecked = 0, gPass = 0, gFail = 0;
+      assigned.forEach(ma => {
+        const r = taskData.results[ma] || {};
+        allItems.forEach(id => { if(r[id]){ gChecked++; if(r[id].status==='pass')gPass++; else gFail++; } });
+        if (taskData.checks[ma]?.submitted) g.submitted++;
+      });
+      g.qlkvs.push({ ...q, assigned, cStores: assigned.length, checked: gChecked, pass: gPass, fail: gFail });
+      g.totalStores += assigned.length;
+      g.pass += gPass; g.fail += gFail;
     });
     
-    const qRate = qChecked > 0 ? Math.round(qPass / qChecked * 100) : 0;
-    const qProgress = assigned.length > 0 ? Math.round(checkedStores.length / assigned.length * 100) : 0;
-    if (gdvFilter && q.gdv !== gdvFilter) return null;
+    Object.entries(gdvGroups).sort(([a],[b]) => a.localeCompare(b)).forEach(([gdv, g]) => {
+      const gRate = (g.pass+g.fail) > 0 ? Math.round(g.pass/(g.pass+g.fail)*100) : 0;
+      const gKey = 'gdv_' + gdv;
+      const exp = expandedRows[gKey];
+      rows.push({ level: 0, key: gKey, name: gdv, stores: g.totalStores, qlkvCount: g.qlkvs.length,
+        checked: g.pass+g.fail, pass: g.pass, fail: g.fail, rate: gRate, submitted: g.submitted, icon: '📁' });
+      if (exp) {
+        rows.push(...g.qlkvs.sort((a,b) => a.qlkv.localeCompare(b.qlkv)).map(q => {
+          const qRate = q.checked > 0 ? Math.round(q.pass/q.checked*100) : 0;
+          const qKey = 'qlkv_' + q.qlkv;
+          const qExp = expandedRows[qKey];
+          const qRow = { level: 1, key: qKey, name: q.qlkv, stores: q.cStores, parent: gKey,
+            checked: q.checked, pass: q.pass, fail: q.fail, rate: qRate,
+            submitted: q.assigned.filter(ma => taskData.checks[ma]?.submitted).length, icon: '👤' };
+          const children = [];
+          if (qExp) {
+            q.assigned.forEach(ma => {
+              const r = taskData.results[ma] || {};
+              const sPass = allItems.filter(id => r[id]&&r[id].status==='pass').length;
+              const sFail = allItems.filter(id => r[id]&&r[id].status==='fail').length;
+              const sRate = (sPass+sFail)>0 ? Math.round(sPass/(sPass+sFail)*100) : 0;
+              const store = STORE_DATA.find(s => s.ma === ma) || { ten: ma, tinh: '' };
+              children.push({ level: 2, key: 'ch_'+ma, name: store.ten + (store.tinh?' — '+store.tinh:''),
+                sub: 'Mã: '+ma, stores: 1, parent: qKey, checked: sPass+sFail, pass: sPass, fail: sFail,
+                rate: sRate, icon: '🏪', storeMa: ma, qlkv: q.qlkv });
+            });
+          }
+          return [qRow, ...children];
+        }).flat());
+      }
+    });
+  } else {
+    // Group by Tỉnh/TP
+    const tinhMap = {};
+    STORE_DATA.forEach(s => { if (!tinhMap[s.tinh]) tinhMap[s.tinh] = []; tinhMap[s.tinh].push(s); });
     
-    return `<tr><td><strong>${q.qlkv}</strong></td><td>${q.gdv}</td>
-      <td>${checkedStores.length}/${assigned.length||0} <span class="badge ${submittedStores.length>0?'pass':'pending'}">${submittedStores.length} gửi</span></td>
-      <td class="bar-cell"><div class="bar-bg"><div class="bar-fill ${qProgress>=80?'green':qProgress>=40?'yellow':'red'}" style="width:${qProgress}%"></div></div>${qProgress}%</td>
-      <td><strong style="color:${qRate>=80?'var(--success)':qRate>=50?'var(--warning)':'var(--danger)'}">${qRate}%</strong>(${qPass}/${qChecked})</td>
-      <td><button class="btn btn-outline btn-sm" onclick="showDetail('${q.qlkv}')">Xem</button></td></tr>`;
-  }).filter(Boolean);
+    Object.entries(tinhMap).sort(([a],[b]) => a.localeCompare(b)).forEach(([tinh, stores]) => {
+      if (tinhFilter && tinh !== tinhFilter) return;
+      let tChecked = 0, tPass = 0, tFail = 0, tSubmitted = 0, tTotal = 0;
+      const qlkvs = new Set();
+      stores.forEach(s => {
+        const r = taskData.results[s.ma] || {};
+        // Only count assigned stores
+        let isAssigned = false;
+        Object.values(taskData.assignments||{}).forEach(arr => { if (arr.includes(s.ma)) isAssigned = true; });
+        if (!isAssigned) return;
+        tTotal++;
+        qlkvs.add(s.qlkv);
+        allItems.forEach(id => { if(r[id]){ tChecked++; if(r[id].status==='pass')tPass++; else tFail++; } });
+        if (taskData.checks[s.ma]?.submitted) tSubmitted++;
+      });
+      if (tTotal === 0) return;
+      const tRate = tChecked > 0 ? Math.round(tPass/tChecked*100) : 0;
+      const tKey = 'tinh_' + tinh;
+      const exp = expandedRows[tKey];
+      rows.push({ level: 0, key: tKey, name: tinh, stores: tTotal, qlkvCount: qlkvs.size,
+        checked: tChecked, pass: tPass, fail: tFail, rate: tRate, submitted: tSubmitted, icon: '📍' });
+      if (exp) {
+        // Show CHs under this tỉnh
+        stores.filter(s => {
+          let assigned = false;
+          Object.values(taskData.assignments||{}).forEach(arr => { if (arr.includes(s.ma)) assigned = true; });
+          return assigned;
+        }).forEach(s => {
+          const r = taskData.results[s.ma] || {};
+          const sPass = allItems.filter(id => r[id]&&r[id].status==='pass').length;
+          const sFail = allItems.filter(id => r[id]&&r[id].status==='fail').length;
+          const sRate = (sPass+sFail)>0 ? Math.round(sPass/(sPass+sFail)*100) : 0;
+          rows.push({ level: 1, key: 'ch_'+s.ma, name: s.ten, sub: 'Mã: '+s.ma+' | QLKV: '+s.qlkv,
+            stores: 1, parent: tKey, checked: sPass+sFail, pass: sPass, fail: sFail,
+            rate: sRate, icon: '🏪', storeMa: s.ma, qlkv: s.qlkv });
+        });
+      }
+    });
+  }
   
-  document.querySelector('#dashQlkvTable tbody').innerHTML = qlkvRows.join('') || '<tr><td colspan="6" style="text-align:center;color:var(--muted);padding:20px;">Chưa có dữ liệu</td></tr>';
+  // Render rows
+  const color = (r) => r >= 80 ? 'var(--success)' : r >= 50 ? 'var(--warning)' : 'var(--danger)';
+  const progressPct = (row) => row.stores > 0 ? Math.round(row.checked / Math.max(row.stores*14, 1) * 100) : 0;
   
-  // Weakest items (across all stores)
+  tbody.innerHTML = rows.map(row => {
+    const indent = row.level * 24;
+    const expIcon = (row.level < 2 && expandedRows[row.key]) ? '📂' : (row.level < 2 ? '📁' : '');
+    const clickable = row.level < 2 ? 'cursor:pointer;' : '';
+    const bg = row.level === 0 ? '#f8fafc' : row.level === 1 ? '#fff' : '#fafafa';
+    const fontWeight = row.level === 0 ? '600' : '400';
+    const pct = progressPct(row);
+    return `<tr style="${clickable}background:${bg};" onclick="${row.level < 2 ? `toggleRow('${row.key}')` : (row.storeMa ? `showStoreDetail('${row.storeMa}','${row.qlkv||''}')` : '')}">
+      <td style="padding-left:${indent+8}px;">${row.level < 2 ? `<span style="font-size:14px;">${expIcon}</span>` : ''} ${row.icon}</td>
+      <td style="font-weight:${fontWeight};"><div>${row.name}</div>${row.sub ? `<div style="font-size:11px;color:var(--muted);">${row.sub}</div>` : ''}</td>
+      <td>${row.stores} CH${row.qlkvCount ? ` · ${row.qlkvCount} QLKV` : ''}</td>
+      <td><div style="display:flex;align-items:center;gap:6px;"><div class="bar-bg" style="flex:1;max-width:80px;"><div class="bar-fill ${pct>=80?'green':pct>=40?'yellow':'red'}" style="width:${pct}%"></div></div>${pct}%</div>${row.submitted ? `<span class="badge pass" style="font-size:10px;">${row.submitted} gửi</span>` : ''}</td>
+      <td><span class="badge pass">${row.pass}</span></td>
+      <td><span class="badge fail">${row.fail}</span></td>
+      <td><strong style="color:${color(row.rate)}">${row.rate}%</strong></td>
+      <td style="font-size:11px;">${row.fail > 0 ? '⚠️' : row.checked > 0 ? '✅' : '—'}</td>
+    </tr>`;
+  }).join('');
+  
+  // Populate tinh filter
+  if (groupBy === 'tinh') {
+    const tinhs = [...new Set(STORE_DATA.map(s => s.tinh))].sort();
+    const tinhSel = document.getElementById('dashTinhFilter');
+    tinhSel.innerHTML = '<option value="">Tất cả Tỉnh/TP</option>' + tinhs.map(t => `<option value="${t}" ${tinhFilter===t?'selected':''}>${t}</option>`).join('');
+  }
+  
+  // Weakest items
   const itemStats = {};
   allItems.forEach(id => { itemStats[id] = { pass:0, fail:0, title: '' }; });
   CHECKLIST_TEMPLATE.forEach(g => g.items.forEach(it => { itemStats[it.id].title = it.title; }));
-  
   Object.values(taskData.results).forEach(r => {
-    allItems.forEach(id => {
-      if (r[id]) {
-        if (r[id].status === 'pass') itemStats[id].pass++;
-        else itemStats[id].fail++;
-      }
-    });
+    allItems.forEach(id => { if (r[id]) { if (r[id].status === 'pass') itemStats[id].pass++; else itemStats[id].fail++; } });
   });
-  
-  const weakest = Object.entries(itemStats)
-    .map(([id, s]) => ({ id, ...s, total: s.pass + s.fail, rate: s.total > 0 ? s.pass / s.total : 1 }))
-    .filter(s => s.total > 0)
-    .sort((a,b) => a.rate - b.rate)
-    .slice(0, 5);
-  
-  document.getElementById('weakestItems').innerHTML = weakest.length > 0 
+  const weakest = Object.entries(itemStats).map(([id,s]) => ({id,...s,total:s.pass+s.fail,rate:s.total>0?s.pass/s.total:1}))
+    .filter(s => s.total > 0).sort((a,b) => a.rate - b.rate).slice(0, 5);
+  document.getElementById('weakestItems').innerHTML = weakest.length > 0
     ? weakest.map((w,i) => `<div style="display:flex;align-items:center;gap:12px;padding:8px 0;border-bottom:1px solid var(--border);">
-        <span style="font-weight:600;min-width:24px;">#${i+1}</span>
-        <span style="flex:1;">${w.id} — ${w.title}</span>
+        <span style="font-weight:600;min-width:24px;">#${i+1}</span><span style="flex:1;">${w.id} — ${w.title}</span>
         <span style="color:var(--danger);font-weight:600;">${Math.round((1-w.rate)*100)}% K.Đạt</span>
-        <span style="color:var(--muted);font-size:12px;">(${w.fail}/${w.total} lượt)</span>
-      </div>`).join('')
-    : '<p style="color:var(--muted);padding:12px;">Chưa đủ dữ liệu để phân tích</p>';
-  
-  // Audit alerts — flag suspicious checks
-  const auditAlerts = [];
-  Object.entries(taskData.results).forEach(([ma, r]) => {
-    const store = STORE_DATA.find(s => s.ma === ma) || { ten: ma, qlkv: '?' };
-    const session = taskData.sessions?.[ma];
-    const checkedCount = allItems.filter(id => r[id]).length;
-    const evidenceCount = allItems.filter(id => r[id] && r[id].evidence).length;
-    
-    if (session?.startTime && checkedCount >= 10) {
-      const start = new Date(session.startTime);
-      const now = new Date();
-      const diffMin = Math.round((now - start) / 60000);
-      if (diffMin < 2) {
-        auditAlerts.push({ ma, store, qlkv: store.qlkv, checkedCount, diffMin, evidenceCount, reason: 'Check quá nhanh' });
-      }
-    }
-    if (checkedCount >= 10 && evidenceCount === 0) {
-      const existing = auditAlerts.find(a => a.ma === ma);
-      if (!existing) {
-        auditAlerts.push({ ma, store, qlkv: store.qlkv, checkedCount, diffMin: 0, evidenceCount: 0, reason: 'Không có ảnh bằng chứng' });
-      } else {
-        existing.reason += ' + Không ảnh';
-      }
+        <span style="color:var(--muted);font-size:12px;">(${w.fail}/${w.total})</span></div>`).join('')
+    : '<p style="color:var(--muted);padding:12px;">Chưa đủ dữ liệu</p>';
+}
+
+function toggleRow(key) {
+  expandedRows[key] = !expandedRows[key];
+  renderDashboard();
+}
+function expandAll() {
+  document.querySelectorAll('#dashDrillTable tbody tr').forEach(tr => {
+    const onclick = tr.getAttribute('onclick') || '';
+    const match = onclick.match(/toggleRow\('([^']+)'\)/);
+    if (match) expandedRows[match[1]] = true;
+  });
+  renderDashboard();
+}
+function collapseAll() {
+  expandedRows = {};
+  renderDashboard();
+}
+function showStoreDetail(storeMa, qlkv) {
+  const { taskData } = td(); if (!taskData) return;
+  const r = taskData.results[storeMa] || {};
+  const allItems = CHECKLIST_TEMPLATE.flatMap(g => g.items.map(i => i.id));
+  const sPass = allItems.filter(id => r[id]&&r[id].status==='pass').length;
+  const sFail = allItems.filter(id => r[id]&&r[id].status==='fail').length;
+  let html = `<h2>🏪 Chi tiết CH: ${storeMa}</h2><div style="font-size:12px;">`;
+  allItems.forEach(id => {
+    if (r[id]) {
+      const icon = r[id].status === 'pass' ? '✅' : '❌';
+      const ts = r[id].timestamp ? formatDateTime(new Date(r[id].timestamp)) : '';
+      const ft = r[id].faultTime ? ` ⏰Lỗi: ${r[id].faultTime.split(' ')[0].split('-').reverse().join('/')} ${r[id].faultTime.split(' ')[1]||''}` : '';
+      html += `<div style="padding:2px 0;">${icon} <strong>${id}</strong> — ${r[id].note||'—'}${ft} <span style="color:var(--muted);font-size:10px;">[${ts}]</span></div>`;
     }
   });
-  
-  const auditHtml = auditAlerts.length > 0
-    ? auditAlerts.map(a => `<div style="display:flex;align-items:center;gap:12px;padding:8px 0;border-bottom:1px solid var(--border);">
-        <span class="audit-badge warning">⚠️ ${a.reason}</span>
-        <span style="flex:1;">${a.store.ten} <span style="color:var(--muted);font-size:11px;">(${a.ma})</span></span>
-        <span style="color:var(--muted);font-size:12px;">QLKV: ${a.qlkv}</span>
-        <span style="font-size:12px;">${a.checkedCount}/14 mục — ${a.diffMin > 0 ? a.diffMin + ' phút' : ''} — 📸${a.evidenceCount}/14</span>
-      </div>`).join('')
-    : '<p style="color:var(--muted);padding:12px;">✅ Không phát hiện dấu hiệu bất thường</p>';
-  
-  // Insert audit card after weakest items
-  const weakestDiv = document.getElementById('weakestItems');
-  let auditCard = document.getElementById('auditAlerts');
-  if (!auditCard) {
-    auditCard = document.createElement('div');
-    auditCard.id = 'auditAlerts';
-    auditCard.className = 'card';
-    auditCard.innerHTML = '<h2>🔍 Hậu kiểm: Dấu hiệu bất thường</h2><div id="auditAlertsContent"></div>';
-    weakestDiv.parentNode.insertBefore(auditCard, weakestDiv.parentNode.children[weakestDiv.parentNode.children.length - 2]);
-  }
-  document.getElementById('auditAlertsContent').innerHTML = auditHtml;
-  
-  // Store detail table
-  const storeRows = [];
-  Object.entries(weekData.results).forEach(([ma, r]) => {
-    const store = STORE_DATA.find(s => s.ma === ma) || { ten: ma, qlkv: '?', gdv: '?' };
-    const sPass = allItems.filter(id => r[id] && r[id].status === 'pass').length;
-    const sFail = allItems.filter(id => r[id] && r[id].status === 'fail').length;
-    const sChecked = sPass + sFail;
-    const sRate = sChecked > 0 ? Math.round(sPass / sChecked * 100) : 0;
-    if (gdvFilter && store.gdv !== gdvFilter) return;
-    storeRows.push({ ma, ten: store.ten, qlkv: store.qlkv, gdv: store.gdv, checked: sChecked, pass: sPass, fail: sFail, rate: sRate });
-  });
-  storeRows.sort((a,b) => a.rate - b.rate);
-  
-  document.querySelector('#dashStoreTable tbody').innerHTML = storeRows.length > 0
-    ? storeRows.map(s => `<tr>
-        <td><strong>${s.ten}</strong><br><span style="font-size:11px;color:var(--muted);">${s.ma}</span></td>
-        <td>${s.qlkv}</td><td>${s.gdv}</td>
-        <td>${s.checked}/14</td>
-        <td><span class="badge pass">${s.pass}</span></td>
-        <td><span class="badge fail">${s.fail}</span></td>
-        <td><strong style="color:${s.rate >= 80 ? 'var(--success)' : s.rate >= 50 ? 'var(--warning)' : 'var(--danger)'}">${s.rate}%</strong></td>
-      </tr>`).join('')
-    : '<tr><td colspan="7" style="text-align:center;color:var(--muted);padding:20px;">Chưa có CH nào được check</td></tr>';
+  html += `</div><p style="margin-top:8px;">${sPass}✅ / ${sFail}❌</p>`;
+  html += `<button class="btn btn-outline btn-sm" onclick="closeModal()" style="margin-top:12px;">Đóng</button>`;
+  document.getElementById('modalContent').innerHTML = html;
+  document.getElementById('modalOverlay').classList.add('show');
 }
 
 function showDetail(qlkvName) {
