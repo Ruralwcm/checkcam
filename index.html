@@ -157,7 +157,7 @@ tr:hover td { background:#f8fafc; }
 </head>
 <body>
 <header>
-  <h1>📷 Check Cam Tuân Thủ v<span id="appVersion">1.5.0</span></h1>
+  <h1>📷 Check Cam Tuân Thủ v<span id="appVersion">1.6.0</span></h1>
   <nav>
     <button onclick="switchTab('check')" class="active" data-tab="check">📝 Check Cam</button>
     <button onclick="switchTab('dashboard')" data-tab="dashboard">📊 Dashboard</button>
@@ -344,6 +344,60 @@ function getTasks() {
 }
 function saveTasks(t) { localStorage.setItem(TASKS_KEY, JSON.stringify(t)); }
 
+// ==================== CHUYÊN ĐỀ (Check Kits) ====================
+const CHUYENDE_KEY = 'checkcam_chuyende';
+
+function getChuyenDe() {
+  try { return JSON.parse(localStorage.getItem(CHUYENDE_KEY)) || getDefaultChuyenDe(); }
+  catch(e) { return getDefaultChuyenDe(); }
+}
+function saveChuyenDe(cd) { localStorage.setItem(CHUYENDE_KEY, JSON.stringify(cd)); }
+
+function getDefaultChuyenDe() {
+  return [{
+    id: 'cd_default', name: 'Bộ Kit Chuẩn — Check Cam Full', isDefault: true,
+    desc: '14 hạng mục đầy đủ: Tác phong, Basic, QTQĐ',
+    items: CHECKLIST_TEMPLATE.flatMap(g => g.items.map(it => ({
+      id: it.id, title: it.title, desc: it.desc, time: it.time,
+      group: g.group, type: 'periodic' // định kỳ
+    })))
+  }];
+}
+
+function getTaskItems(task) {
+  if (!task) return CHECKLIST_TEMPLATE;
+  if (task.chuyenDeId || task.customItems?.length) {
+    const cd = getChuyenDe().find(c => c.id === task.chuyenDeId);
+    const baseItems = cd ? cd.items : getDefaultChuyenDe()[0].items;
+    const customItems = (task.customItems || []).map(it => ({...it, type: 'ad-hoc'}));
+    const all = [...baseItems, ...customItems];
+    const groups = {};
+    all.forEach(it => {
+      const g = it.group || 'Khác';
+      if (!groups[g]) groups[g] = [];
+      groups[g].push(it);
+    });
+    return Object.entries(groups).map(([group, items]) => ({ group, items }));
+  }
+  return CHECKLIST_TEMPLATE;
+}
+
+function activeChecklist() {
+  const tasks = getTasks();
+  const task = tasks.find(t => t.id === getActiveTaskId());
+  return getTaskItems(task);
+}
+
+function activeFlatItems() {
+  return activeChecklist().flatMap(g => g.items.map(i => ({...i, group: g.group})));
+}
+
+function getTaskFlatItems(task) {
+  // Get flat list of items for a task
+  const groups = getTaskItems(task);
+  return groups.flatMap(g => g.items.map(i => ({...i, group: g.group})));
+}
+
 function getActiveTaskId() {
   return localStorage.getItem('checkcam_active_task') || '';
 }
@@ -497,7 +551,8 @@ function renderTaskList() {
     return;
   }
   
-  const allItems = CHECKLIST_TEMPLATE.flatMap(g => g.items.map(i => i.id));
+  const flatItems = activeFlatItems();
+  const allItems = flatItems.map(i => i.id);
   const activeId = getActiveTaskId();
   
   container.innerHTML = tasks.sort((a,b) => b.created.localeCompare(a.created)).map(t => {
@@ -550,37 +605,69 @@ function renderTaskList() {
 
 function showCreateTask() {
   const now = new Date();
-  const defDeadline = new Date(now.getTime() + 5*24*60*60*1000); // +5 days
+  const defDeadline = new Date(now.getTime() + 5*24*60*60*1000);
+  const cdList = getChuyenDe();
+  const cdOpts = cdList.map(cd => `<option value="${cd.id}">${cd.name} (${cd.items.length} mục)</option>`).join('');
+  
   document.getElementById('modalContent').innerHTML = `
     <h2>➕ Tạo Task Check Cam mới</h2>
     <div style="display:flex;flex-direction:column;gap:12px;">
       <label style="font-size:13px;font-weight:600;">Tên Task</label>
       <input id="newTaskName" placeholder="VD: Check Cam Tuần 40 — Tháng 10" style="padding:10px;border:1px solid var(--border);border-radius:8px;font-size:14px;">
+      
+      <label style="font-size:13px;font-weight:600;">📋 Chuyên đề Check</label>
+      <select id="newTaskChuyenDe" onchange="previewChuyenDeItems()" style="padding:10px;border:1px solid var(--border);border-radius:8px;font-size:14px;">
+        ${cdOpts}
+        <option value="_custom">🛠 Tự tạo chuyên đề riêng...</option>
+      </select>
+      <div id="chuyenDePreview" style="font-size:12px;color:var(--muted);padding:4px 0;"></div>
+      
       <label style="font-size:13px;font-weight:600;">Deadline</label>
       <input id="newTaskDeadline" type="datetime-local" value="${defDeadline.toISOString().slice(0,16)}" style="padding:10px;border:1px solid var(--border);border-radius:8px;font-size:14px;">
+      
+      <div style="font-size:12px;color:var(--muted);">💡 Mỗi Task sẽ dùng bộ checklist từ Chuyên đề đã chọn. Có thể thêm hạng mục riêng sau khi tạo.</div>
       <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:8px;">
         <button class="btn btn-outline btn-sm" onclick="closeModal()">Hủy</button>
         <button class="btn btn-primary btn-sm" onclick="createTask()">Tạo Task</button>
       </div>
     </div>`;
+  previewChuyenDeItems();
   document.getElementById('modalOverlay').classList.add('show');
+}
+
+function previewChuyenDeItems() {
+  const sel = document.getElementById('newTaskChuyenDe');
+  const preview = document.getElementById('chuyenDePreview');
+  if (!sel || !preview) return;
+  const cdId = sel.value;
+  if (cdId === '_custom') {
+    preview.innerHTML = '🛠 Sẽ dùng bộ kit chuẩn, có thể thêm/sửa hạng mục riêng sau.';
+    return;
+  }
+  const cd = getChuyenDe().find(c => c.id === cdId);
+  if (!cd) { preview.innerHTML = ''; return; }
+  const periodic = cd.items.filter(i => i.type === 'periodic').length;
+  const adhoc = cd.items.filter(i => i.type === 'ad-hoc').length;
+  preview.innerHTML = `📋 ${cd.items.length} hạng mục (${periodic} định kỳ${adhoc ? ', ' + adhoc + ' sự vụ' : ''}): ${cd.items.slice(0,5).map(i=>i.title).join(', ')}${cd.items.length>5?'...':''}`;
 }
 
 function createTask() {
   const name = document.getElementById('newTaskName').value.trim();
   if (!name) return toast('⚠️ Nhập tên Task');
   const deadline = document.getElementById('newTaskDeadline').value;
+  const chuyenDeId = document.getElementById('newTaskChuyenDe').value;
   
   const tasks = getTasks();
   const id = 'task_' + Date.now();
   tasks.push({
     id, name, deadline, status: 'active',
     created: new Date().toISOString(),
+    chuyenDeId: chuyenDeId === '_custom' ? 'cd_default' : chuyenDeId,
+    customItems: [],
     assignments: {}, results: {}, checks: {}, sessions: {}
   });
   saveTasks(tasks);
   
-  // Initialize data for this task
   const data = getData();
   data[id] = { checks:{}, assignments:{}, results:{}, sessions:{} };
   saveData(data);
@@ -947,7 +1034,8 @@ function removeEvidence(itemId) {
 
 function renderChecklist() {
   const container = document.getElementById('checklistContainer');
-  container.innerHTML = CHECKLIST_TEMPLATE.map(group => `
+  const items = activeChecklist();
+  container.innerHTML = items.map(group => `
     <div class="checklist-group">
       <div class="checklist-group-header">
         <span>${group.group}</span>
@@ -1136,7 +1224,7 @@ document.addEventListener('input', function(e) {
 function updateProgress(storeMa) {
   const { weekData } = getWeekData();
   const results = weekData.results[storeMa] || {};
-  const totalItems = 14;
+  const totalItems = activeFlatItems().length || 14;
   const checked = Object.keys(results).length;
   const pct = Math.round(checked / totalItems * 100);
   
@@ -1155,8 +1243,8 @@ function submitCheck() {
   
   const { data, wk, weekData } = getWeekData();
   const results = weekData.results[storeMa] || {};
-  
-  const allItems = CHECKLIST_TEMPLATE.flatMap(g => g.items.map(i => i.id));
+  const flatItems = activeFlatItems();
+  const allItems = flatItems.map(i => i.id);
   
   // Check all items have been evaluated
   const missingNote = allItems.filter(id => {
@@ -1222,7 +1310,7 @@ async function pushToSheet() {
   
   // Build results array
   const resultRows = [];
-  const allItems = CHECKLIST_TEMPLATE.flatMap(g => g.items.map(i => ({...i, group: g.group})));
+  const allItems = activeFlatItems();
   allItems.forEach(item => {
     if (results[item.id]) {
       resultRows.push({
@@ -1280,7 +1368,8 @@ let expandedRows = {};
 
 function renderDashboard() {
   const tasks = getTasks();
-  const allItems = CHECKLIST_TEMPLATE.flatMap(g => g.items.map(i => i.id));
+  const flatItems = activeFlatItems();
+  const allItems = flatItems.map(i => i.id);
   const taskId = getActiveTaskId();
   const { taskData } = td();
   
@@ -1322,8 +1411,7 @@ function renderDashboard() {
   // ==================== ITEM VIEW ====================
   if (viewMode === 'item') {
     const itemStats = {};
-    allItems.forEach(id => { itemStats[id] = { pass:0, fail:0, title:'', group:'' }; });
-    CHECKLIST_TEMPLATE.forEach(g => g.items.forEach(it => { itemStats[it.id].title = it.title; itemStats[it.id].group = g.group; }));
+    flatItems.forEach(it => { itemStats[it.id] = { pass:0, fail:0, title: it.title, group: it.group }; });
     Object.values(taskData.results).forEach(r => {
       allItems.forEach(id => { if (r[id]) { if (r[id].status === 'pass') itemStats[id].pass++; else itemStats[id].fail++; } });
     });
@@ -1499,7 +1587,8 @@ function showStoreDetail(storeMa, qlkv) {
 
 function showDetail(qlkvName) {
   const { weekData } = getWeekData();
-  const allItems = CHECKLIST_TEMPLATE.flatMap(g => g.items.map(i => i.id));
+  const flatItems = activeFlatItems();
+  const allItems = flatItems.map(i => i.id);
   const assigned = weekData.assignments[qlkvName] || [];
   
   let html = `<h2>📋 Chi tiết: ${qlkvName}</h2>`;
@@ -1552,7 +1641,7 @@ function renderAdmin() {
   renderTaskList();
   
   // Checklist preview
-  document.getElementById('adminChecklistPreview').innerHTML = CHECKLIST_TEMPLATE.map(g => `
+  document.getElementById('adminChecklistPreview').innerHTML = activeChecklist().map(g => `
     <div style="margin-bottom:8px;"><strong>${g.group}</strong> (${g.items.length} mục)</div>
     ${g.items.map(it => `<div style="padding:4px 0 4px 16px;font-size:12px;">${it.id}. ${it.title} — <span style="color:var(--muted);">📹 ${it.time}</span></div>`).join('')}
   `).join('');
@@ -1677,7 +1766,8 @@ function clearAssignments() {
 // ==================== EXPORT ====================
 function exportData() {
   const { weekData } = getWeekData();
-  const allItems = CHECKLIST_TEMPLATE.flatMap(g => g.items.map(i => i.id));
+  const flatItems = activeFlatItems();
+  const allItems = flatItems.map(i => i.id);
   
   let csv = 'CH Mã,CH Tên,QLKV,GĐV,Tỉnh,Hạng mục,Trạng thái,Ghi chú,Ngày check\n';
   
