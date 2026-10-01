@@ -1257,8 +1257,8 @@ function renderDashboard() {
   }
   
   // Show audit card
-  const auditCard = document.getElementById('auditAlerts');
-  if (auditCard) auditCard.style.display = 'block';
+  const auditAlertsCard = document.getElementById('auditAlerts');
+  if (auditAlertsCard) auditAlertsCard.style.display = 'block';
   
   // QLKV table for active task
   const gdvFilter = document.getElementById('dashGdvFilter')?.value || '';
@@ -1585,7 +1585,7 @@ function exportData() {
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
   a.href = url;
-  a.download = `CheckCam_Tuan${getCurrentWeek()}_${new Date().toISOString().slice(0,10)}.csv`;
+  a.download = `CheckCam_${getActiveTaskId() || 'export'}_${new Date().toISOString().slice(0,10)}.csv`;
   a.click();
   URL.revokeObjectURL(url);
   toast('📥 Đã export CSV!');
