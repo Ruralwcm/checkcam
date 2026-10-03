@@ -1,0 +1,731 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Khảo sát CSVC Cửa hàng - WinRural v5</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:'Segoe UI',Arial,sans-serif;background:#f0f4f8;min-height:100vh;padding-bottom:80px}
+.header{background:linear-gradient(135deg,#1a3a5c,#1e5799);color:#fff;padding:14px 20px;text-align:center;position:sticky;top:0;z-index:100}
+.header h1{font-size:18px;font-weight:800}
+.header p{font-size:12px;opacity:.85;margin-top:2px}
+.container{max-width:750px;margin:0 auto;padding:12px}
+.card{background:#fff;border-radius:12px;padding:16px;margin-bottom:12px;box-shadow:0 2px 8px rgba(0,0,0,.05)}
+.card h3{font-size:14px;color:#1a3a5c;margin-bottom:10px;padding-bottom:6px;border-bottom:2px solid #e2e8f0;display:flex;align-items:center;gap:6px}
+.card h3 .num{background:#1e5799;color:#fff;width:22px;height:22px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700}
+label{display:block;font-size:13px;font-weight:600;color:#334155;margin-bottom:3px;margin-top:8px}
+select,input[type=text],textarea{width:100%;padding:9px 10px;border:1px solid #cbd5e1;border-radius:8px;font-size:13px;transition:border-color .2s;font-family:inherit}
+select:focus,input:focus,textarea:focus{outline:none;border-color:#1e5799;box-shadow:0 0 0 3px rgba(30,87,153,.1)}
+select:disabled{background:#f1f5f9;color:#94a3b8}
+textarea{min-height:50px;resize:vertical}
+
+/* Progress bar */
+.progress-bar{background:#e2e8f0;border-radius:8px;height:6px;margin:6px 0 2px;overflow:hidden}
+.progress-fill{background:linear-gradient(90deg,#1e5799,#38a169);height:100%;border-radius:8px;transition:width .3s}
+.progress-text{font-size:11px;color:#64748b;text-align:right}
+
+/* Area group */
+.area-group{margin-bottom:16px}
+.area-title{font-size:13px;font-weight:700;color:#1e5799;margin-bottom:8px;padding:6px 10px;background:#e8f0fe;border-radius:6px;display:flex;align-items:center;gap:5px}
+.area-title .area-count{font-size:11px;font-weight:400;color:#64748b;margin-left:auto}
+
+/* Item row */
+.item-row{border:1px solid #e2e8f0;border-radius:8px;padding:8px 10px;margin-bottom:6px;transition:all .2s}
+.item-row:hover{border-color:#cbd5e1}
+.item-row.evaluated{border-left:3px solid #38a169;background:#f0fdf4}
+.item-row.issue{border-left:3px solid #dc2626;background:#fef2f2}
+.item-header{display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+.item-number{background:#e2e8f0;color:#475569;min-width:20px;height:20px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;flex-shrink:0}
+.item-name{flex:1;font-size:12px;font-weight:600;color:#1e293b;min-width:130px}
+
+/* Toggle buttons */
+.toggle-group{display:flex;gap:0;flex-shrink:0}
+.toggle-btn{padding:5px 12px;border:1px solid #cbd5e1;font-size:11px;font-weight:600;cursor:pointer;transition:all .15s;background:#fff;color:#64748b}
+.toggle-btn:first-child{border-radius:6px 0 0 6px}
+.toggle-btn:last-child{border-radius:0 6px 6px 0}
+.toggle-btn.active-pass{background:#16a34a;color:#fff;border-color:#16a34a}
+.toggle-btn.active-fail{background:#dc2626;color:#fff;border-color:#dc2626}
+
+/* Pass text */
+.pass-text{font-size:12px;color:#16a34a;font-weight:600;display:none;margin-top:4px;padding:4px 8px;background:#f0fdf4;border-radius:6px}
+.pass-text.show{display:block}
+
+/* Issue detail */
+.issue-detail{display:none;margin-top:6px;padding:8px;background:#fff5f5;border-radius:6px;border:1px dashed #fca5a5}
+.issue-detail.show{display:block}
+.issue-detail textarea{font-size:12px;min-height:40px;margin-top:3px}
+.issue-detail label{font-size:11px;margin-top:6px}
+
+/* Inline photos */
+.inline-photos{display:flex;gap:6px;flex-wrap:wrap;margin-top:4px}
+.inline-photo-box{width:60px;height:60px;border:2px dashed #cbd5e1;border-radius:6px;display:flex;align-items:center;justify-content:center;cursor:pointer;position:relative;overflow:hidden;flex-shrink:0}
+.inline-photo-box:hover{border-color:#dc2626}
+.inline-photo-box img{width:100%;height:100%;object-fit:cover}
+.inline-photo-box .remove{position:absolute;top:1px;right:1px;background:rgba(0,0,0,.6);color:#fff;width:16px;height:16px;border-radius:50%;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:9px}
+.inline-photo-box .placeholder{font-size:9px;color:#94a3b8;text-align:center}
+.photo-required{font-size:9px;color:#dc2626;margin-top:2px}
+
+.store-info{background:#f0fdf4;border:1px solid #86efac;border-radius:8px;padding:10px;margin-top:6px;font-size:12px;display:none}
+.store-info span{font-weight:600}
+.hint{font-size:10px;color:#94a3b8;margin-top:3px}
+.error-msg{color:#dc2626;font-size:11px;margin-top:3px;display:none}
+
+/* Submit */
+.btn-submit{width:100%;padding:12px;background:linear-gradient(135deg,#1e5799,#2b6cb0);color:#fff;border:none;border-radius:10px;font-size:15px;font-weight:700;cursor:pointer;transition:transform .1s;margin-top:8px}
+.btn-submit:hover{transform:scale(1.01)}
+.btn-submit:active{transform:scale(.98)}
+.btn-submit:disabled{opacity:.5;cursor:not-allowed}
+.loading{display:none;text-align:center;padding:16px}
+.spinner{width:36px;height:36px;border:4px solid #e2e8f0;border-top:4px solid #1e5799;border-radius:50%;animation:spin 1s linear infinite;margin:0 auto}
+@keyframes spin{to{transform:rotate(360deg)}}
+.success{display:none;text-align:center;padding:16px;color:#16a34a;font-weight:700;font-size:16px}
+.validation-error{color:#dc2626;font-size:11px;margin-top:6px;display:none;padding:8px;background:#fef2f2;border-radius:8px}
+
+/* Bottom bar */
+.bottom-bar{position:fixed;bottom:0;left:0;right:0;background:rgba(255,255,255,.95);border-top:1px solid #e2e8f0;padding:8px 12px;display:flex;gap:8px;align-items:center;z-index:100;backdrop-filter:blur(8px)}
+.bottom-bar .progress-mini{flex:1}
+.bottom-bar .progress-bar{height:5px}
+
+/* Toast */
+.toast{position:fixed;top:70px;left:50%;transform:translateX(-50%);background:#1e293b;color:#fff;padding:10px 20px;border-radius:20px;font-size:13px;z-index:200;display:none;box-shadow:0 4px 20px rgba(0,0,0,.2)}
+.toast.show{display:block;animation:toastIn .3s ease}
+.toast.error{background:#dc2626}
+@keyframes toastIn{from{opacity:0;transform:translateX(-50%) translateY(-10px)}to{opacity:1;transform:translateX(-50%) translateY(0)}}
+
+@media (max-width:480px){
+  .toggle-btn{padding:4px 10px;font-size:10px}
+  .item-row{padding:6px 8px}
+  .item-name{font-size:11px}
+}
+</style>
+</head>
+<body>
+
+<div class="header">
+  <h1>🏪 Khảo sát CSVC Cửa hàng</h1>
+  <p>WinRural · 33 hạng mục · Đạt/Không đạt + Ảnh <span style="font-size:9px;opacity:.6">v5.1</span></p>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<div class="container" id="formContainer">
+  <!-- ① Chọn GĐV/QLKV/CH -->
+  <div class="card">
+    <h3><span class="num">1</span> Thông tin Cửa hàng</h3>
+    <label>GĐV (Giám đốc Vùng)</label>
+    <select id="gdvSelect"><option value="">-- Chọn GĐV --</option></select>
+    
+    <label>QLKV (Quản lý Khu vực)</label>
+    <select id="qlkvSelect" disabled><option value="">-- Chọn QLKV --</option></select>
+    
+    <label>Cửa hàng</label>
+    <select id="storeSelect" disabled><option value="">-- Chọn Cửa hàng --</option></select>
+    <div class="store-info" id="storeInfo">
+      Mã CH: <span id="siCode">-</span> · Tỉnh: <span id="siProvince">-</span> · Tên: <span id="siName">-</span>
+    </div>
+    <div class="hint">Dữ liệu từ Storelist Google Sheets</div>
+  </div>
+
+  <!-- ② Checklist 33 hạng mục -->
+  <div class="card">
+    <h3><span class="num">2</span> Checklist CSVC — 33 hạng mục</h3>
+    <div class="hint" style="margin-bottom:6px">⚠️ Bắt buộc đánh giá TẤT CẢ hạng mục</div>
+    <div class="progress-bar"><div class="progress-fill" id="progressFill" style="width:0%"></div></div>
+    <div class="progress-text" id="progressText">0/33 hạng mục đã đánh giá</div>
+    <div class="checklist" id="checklist"></div>
+    <div class="validation-error" id="validationError"></div>
+  </div>
+
+  <!-- ③ Ghi chú chung -->
+  <div class="card">
+    <h3><span class="num">3</span> Ghi chú chung</h3>
+    <textarea id="generalNote" placeholder="Ghi chú chung cho đợt khảo sát (nếu có)..."></textarea>
+  </div>
+
+  <button class="btn-submit" id="btnSubmit" onclick="submitForm()">📤 Gửi kết quả khảo sát</button>
+  <div class="loading" id="loading"><div class="spinner"></div><p style="margin-top:6px;color:#64748b;font-size:13px">Đang nén ảnh & gửi dữ liệu...</p></div>
+  <div class="success" id="success">✅ Đã gửi khảo sát thành công!</div>
+</div>
+
+<script>
+// ── CONFIG ──
+// === GOOGLE APPS SCRIPT WEB APP URL ===
+const GAS_URL = 'https://script.google.com/macros/s/AKfycbzxPXoDhsPYDe7RbBBfGyW8shFxsB3Q6sv7SvxKSP31H9uKOvtGLSyoHRSRUj-jo3Mo/exec';
+
+const SHEETS_CSV = 'https://docs.google.com/spreadsheets/d/1fMmEm1GC9aei_3oeu2vcadPVsUM9ms9eVhm99d7pF8A/gviz/tq?tqx=out:csv&gid=900581387';
+
+// ── CHECKLIST — fallback mặc định nếu ko fetch được từ Sheet ──
+const DEFAULT_AREAS = [
+  {
+    name: 'Trước CH',
+    items: ['Biển hiệu WM','Mặt tiền/Sơn tường ngoài','Cửa kính/Cửa cuốn','Mái hiên/Mái che','Đèn chiếu sáng ngoài','Bãi đỗ xe/Vỉa hè','Biển quảng cáo/Poster','Cây xanh/Cảnh quan','Thùng rác ngoài','Camera an ninh ngoài','Lối vào/Cửa thoát hiểm']
+  },
+  {
+    name: 'Trong CH',
+    items: ['Sàn nhà/Gạch lát','Trần nhà/Thạch cao','Tường trong/Sơn nội thất','Đèn chiếu sáng trong','Điều hòa/Quạt/Thông gió','Kệ trưng bày/Sạp hàng','Tủ mát/Tủ đông/Tủ lạnh','Bảng giá/Tag giá điện tử','Giỏ hàng/Xe đẩy','Quầy thu ngân/POS','Cân điện tử','Wifi/Mạng/Thiết bị CNTT','Hệ thống âm thanh','Bình chữa cháy/PCCC','Biển báo lối thoát hiểm','Ổ điện/Hệ thống điện','Camera an ninh trong']
+  },
+  {
+    name: 'Kho & Khu vực Nhân viên',
+    items: ['Cửa kho','Kệ kho/Pallet','Đèn kho','Nhà vệ sinh nhân viên','Khu vực nghỉ nhân viên']
+  }
+];
+
+// Dynamic areas (sẽ được load từ Sheet hoặc fallback về DEFAULT)
+let areas = [...DEFAULT_AREAS];
+
+// ── CASCADE DATA ──
+let cascadeData = {};
+
+// Store evaluations and photos per item
+let evaluations = {};
+let itemNotes = {};
+let itemPhotos = {};
+let totalItems = 0;
+
+// ── SAMPLE DATA ──
+const SAMPLE_STORES = [
+  { ma:'WM001', ten:'WinRural Đông Anh', tt:'Đang hoạt động', mien:'Miền Bắc', tinh:'Hà Nội', qlkv:'Nguyễn Văn A', gdv:'Nguyễn Duy Đoàn' },
+  { ma:'WM002', ten:'WinRural Sóc Sơn', tt:'Đang hoạt động', mien:'Miền Bắc', tinh:'Hà Nội', qlkv:'Nguyễn Văn A', gdv:'Nguyễn Duy Đoàn' },
+  { ma:'WM003', ten:'WinRural Mê Linh', tt:'Đang hoạt động', mien:'Miền Bắc', tinh:'Hà Nội', qlkv:'Trần Thị B', gdv:'Tạ Công Nhận' },
+  { ma:'WM004', ten:'WinRural Gia Lâm', tt:'Đang hoạt động', mien:'Miền Bắc', tinh:'Hà Nội', qlkv:'Trần Thị B', gdv:'Tạ Công Nhận' },
+  { ma:'WM005', ten:'WinRural Hòa Bình 1', tt:'Đang hoạt động', mien:'Miền Bắc', tinh:'Hòa Bình', qlkv:'Lê Văn C', gdv:'Hồ Nam' },
+  { ma:'WM006', ten:'WinRural Hòa Bình 2', tt:'Đang hoạt động', mien:'Miền Bắc', tinh:'Hòa Bình', qlkv:'Lê Văn C', gdv:'Hồ Nam' },
+  { ma:'WM007', ten:'WinRural Sơn La 1', tt:'Đang hoạt động', mien:'Miền Bắc', tinh:'Sơn La', qlkv:'Phạm Văn D', gdv:'Nguyễn Mạnh Sơn' },
+  { ma:'WM008', ten:'WinRural Điện Biên 1', tt:'Đang hoạt động', mien:'Miền Bắc', tinh:'Điện Biên', qlkv:'Hoàng Văn E', gdv:'Đặng Văn Dũng' },
+  { ma:'WM009', ten:'WinRural Bắc Ninh 1', tt:'Đang hoạt động', mien:'Miền Bắc', tinh:'Bắc Ninh', qlkv:'Ngô Thị F', gdv:'Lê Thị Hồng Thu' },
+  { ma:'WM010', ten:'WinRural Hải Dương 1', tt:'Đang hoạt động', mien:'Miền Bắc', tinh:'Hải Dương', qlkv:'Ngô Thị F', gdv:'Lê Thị Hồng Thu' },
+];
+
+function parseStoreData(rows) {
+  const data = {};
+  for (const r of rows) {
+    const gdv = r.gdv || 'Chưa phân công';
+    const qlkv = r.qlkv || 'Chưa phân công';
+    if (!data[gdv]) data[gdv] = {};
+    if (!data[gdv][qlkv]) data[gdv][qlkv] = [];
+    data[gdv][qlkv].push({ sid: r.ma, name: r.ten, tinh: r.tinh });
+  }
+  return data;
+}
+
+function loadSampleData() {
+  cascadeData = parseStoreData(SAMPLE_STORES);
+  const gdvSel = document.getElementById('gdvSelect');
+  gdvSel.innerHTML = '<option value="">-- Chọn GĐV --</option>';
+  for (const gdv of Object.keys(cascadeData).sort()) {
+    gdvSel.innerHTML += `<option value="${gdv}">${gdv} (${Object.keys(cascadeData[gdv]).length} QLKV)</option>`;
+  }
+  document.querySelector('.hint').textContent = '⚠️ Dữ liệu mẫu (offline)';
+  document.querySelector('.hint').style.color = '#e67e22';
+  buildChecklist();
+}
+
+// ── FETCH CHECKLIST TỪ SHEET ──
+async function fetchChecklist() {
+  try {
+    const resp = await fetch(GAS_URL + '?action=checklist');
+    if (!resp.ok) throw new Error('HTTP ' + resp.status);
+    const data = await resp.json();
+    if (Array.isArray(data) && data.length > 0) {
+      areas = data;
+      console.log('✅ Checklist loaded from Sheet:', areas.length, 'khu vực');
+      return true;
+    }
+    throw new Error('Invalid data');
+  } catch(e) {
+    console.warn('⚠️ Dùng checklist mặc định:', e.message);
+    areas = [...DEFAULT_AREAS];
+    return false;
+  }
+}
+
+// ── CSV PARSER (handles quoted fields with commas) ──
+function parseCSVLine(line) {
+  const result = [];
+  let current = '';
+  let inQuotes = false;
+  for (let i = 0; i < line.length; i++) {
+    const ch = line[i];
+    if (inQuotes) {
+      if (ch === '"') {
+        if (i + 1 < line.length && line[i + 1] === '"') { current += '"'; i++; }
+        else { inQuotes = false; }
+      } else { current += ch; }
+    } else {
+      if (ch === '"') { inQuotes = true; }
+      else if (ch === ',') { result.push(current); current = ''; }
+      else { current += ch; }
+    }
+  }
+  result.push(current);
+  return result;
+}
+
+// ── INIT ──
+async function init() {
+  await fetchChecklist();  // Load checklist từ Sheet (hoặc fallback mặc định)
+  try {
+    const resp = await fetch(SHEETS_CSV);
+    if (!resp.ok) throw new Error('HTTP ' + resp.status);
+    const text = await resp.text();
+    const lines = text.split('\n');
+    // Parse header to find column indexes (robust against column reordering)
+    const header = parseCSVLine(lines[0]);
+    const idx = {
+      ma: header.indexOf('Mã SAP'),
+      ten: header.indexOf('Tên cửa hàng'),
+      tt: header.indexOf('Tình Trạng'),
+      mien: header.indexOf('Miền'),
+      tinh: header.indexOf('Tỉnh/TP'),
+      qlkv: header.indexOf('QLKV'),
+      gdv: header.indexOf('GĐV')
+    };
+    const rows = lines.slice(1).map(r => {
+      const cols = parseCSVLine(r);
+      return {
+        ma: cols[idx.ma] || '',
+        ten: cols[idx.ten] || '',
+        tt: cols[idx.tt] || '',
+        mien: cols[idx.mien] || '',
+        tinh: cols[idx.tinh] || '',
+        qlkv: cols[idx.qlkv] || '',
+        gdv: cols[idx.gdv] || ''
+      };
+    }).filter(r => r.ma && r.tt === 'Đang hoạt động' && r.mien?.includes('Bắc'));
+    
+    if (rows.length === 0) throw new Error('No data');
+    
+    cascadeData = parseStoreData(rows);
+    const gdvCount = Object.keys(cascadeData).length;
+    const totalCH = rows.length;
+    const gdvSel = document.getElementById('gdvSelect');
+    for (const gdv of Object.keys(cascadeData).sort()) {
+      gdvSel.innerHTML += `<option value="${gdv}">${gdv} (${Object.keys(cascadeData[gdv]).length} QLKV)</option>`;
+    }
+    // Update hint with live stats
+    const hintEl = document.querySelector('#formContainer .card:first-child .hint');
+    if (hintEl) { hintEl.textContent = `✅ Storelist: ${totalCH} CH · ${gdvCount} GĐV (live)`; hintEl.style.color = '#16a34a'; }
+    buildChecklist();
+  } catch(e) {
+    console.warn('Fetch thất bại, dùng data mẫu:', e.message);
+    loadSampleData();
+  }
+}
+
+function buildChecklist() {
+  const cl = document.getElementById('checklist');
+  cl.innerHTML = '';
+  totalItems = 0;
+  evaluations = {};
+  itemNotes = {};
+  itemPhotos = {};
+  
+  for (const area of areas) {
+    let areaHtml = `<div class="area-group"><div class="area-title">📍 ${area.name}<span class="area-count">${area.items.length} mục</span></div>`;
+    
+    for (const item of area.items) {
+      totalItems++;
+      const itemId = item.replace(/[^a-z0-9]/gi,'_');
+      evaluations[itemId] = null;
+      itemNotes[itemId] = '';
+      itemPhotos[itemId] = [];
+      
+      areaHtml += `
+        <div class="item-row" id="row_${itemId}">
+          <div class="item-header">
+            <span class="item-number">${totalItems}</span>
+            <span class="item-name">${item}</span>
+            <div class="toggle-group">
+              <button class="toggle-btn" id="pass_${itemId}" onclick="setEval('${itemId}','pass')">✅ Đạt</button>
+              <button class="toggle-btn" id="fail_${itemId}" onclick="setEval('${itemId}','fail')">❌ Ko đạt</button>
+            </div>
+          </div>
+          <div class="pass-text" id="passText_${itemId}">✅ Đạt</div>
+          <div class="issue-detail" id="issue_${itemId}">
+            <label>📝 Diễn giải <span style="color:#dc2626">*</span></label>
+            <textarea id="note_${itemId}" placeholder="Mô tả tình trạng..." oninput="itemNotes['${itemId}']=this.value;updateProgress()"></textarea>
+            <label style="margin-top:6px">📸 Ảnh <span style="color:#dc2626">*</span> (tối đa 3)</label>
+            <div class="inline-photos" id="photos_${itemId}">
+              <div class="inline-photo-box" onclick="triggerPhoto('${itemId}')">
+                <div class="placeholder">📷<br>Thêm</div>
+              </div>
+            </div>
+            <input type="file" id="fileInput_${itemId}" accept="image/*" multiple style="display:none" onchange="handleItemPhotos(event,'${itemId}')">
+            <div class="photo-required">⚠️ Bắt buộc ≥1 ảnh khi Không đạt</div>
+          </div>
+        </div>`;
+    }
+    cl.innerHTML += areaHtml + `</div>`;
+  }
+}
+
+// ── TOAST ──
+function showToast(msg, isError) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.className = 'toast' + (isError ? ' error' : '') + ' show';
+  clearTimeout(t._timeout);
+  t._timeout = setTimeout(() => t.classList.remove('show'), 3000);
+}
+
+// ── CASCADE HANDLERS ──
+document.getElementById('gdvSelect').addEventListener('change', function() {
+  const gdv = this.value;
+  const qSel = document.getElementById('qlkvSelect');
+  const sSel = document.getElementById('storeSelect');
+  qSel.innerHTML = '<option value="">-- Chọn QLKV --</option>';
+  sSel.innerHTML = '<option value="">-- Chọn Cửa hàng --</option>';
+  sSel.disabled = true;
+  document.getElementById('storeInfo').style.display = 'none';
+  
+  if (!gdv || !cascadeData[gdv]) { qSel.disabled = true; return; }
+  qSel.disabled = false;
+  for (const qlkv of Object.keys(cascadeData[gdv]).sort()) {
+    const count = cascadeData[gdv][qlkv].length;
+    qSel.innerHTML += `<option value="${qlkv}">${qlkv} (${count} CH)</option>`;
+  }
+});
+
+document.getElementById('qlkvSelect').addEventListener('change', function() {
+  const gdv = document.getElementById('gdvSelect').value;
+  const qlkv = this.value;
+  const sSel = document.getElementById('storeSelect');
+  sSel.innerHTML = '<option value="">-- Chọn Cửa hàng --</option>';
+  document.getElementById('storeInfo').style.display = 'none';
+  
+  if (!gdv || !qlkv || !cascadeData[gdv] || !cascadeData[gdv][qlkv]) { sSel.disabled = true; return; }
+  sSel.disabled = false;
+  for (const store of cascadeData[gdv][qlkv].sort((a,b) => a.sid.localeCompare(b.sid))) {
+    sSel.innerHTML += `<option value="${store.sid}" data-name="${store.name}" data-tinh="${store.tinh}">${store.sid} - ${store.name}</option>`;
+  }
+});
+
+document.getElementById('storeSelect').addEventListener('change', function() {
+  const opt = this.selectedOptions[0];
+  const info = document.getElementById('storeInfo');
+  if (opt && opt.dataset.name) {
+    document.getElementById('siCode').textContent = opt.value;
+    document.getElementById('siProvince').textContent = opt.dataset.tinh;
+    document.getElementById('siName').textContent = opt.dataset.name;
+    info.style.display = 'block';
+  } else {
+    info.style.display = 'none';
+  }
+});
+
+// ── EVALUATION TOGGLE ──
+function setEval(itemId, value) {
+  evaluations[itemId] = value;
+  const row = document.getElementById('row_' + itemId);
+  const passBtn = document.getElementById('pass_' + itemId);
+  const failBtn = document.getElementById('fail_' + itemId);
+  const passText = document.getElementById('passText_' + itemId);
+  const issue = document.getElementById('issue_' + itemId);
+  
+  row.classList.remove('evaluated', 'issue');
+  passBtn.classList.remove('active-pass');
+  failBtn.classList.remove('active-fail');
+  passText.classList.remove('show');
+  issue.classList.remove('show');
+  
+  if (value === 'pass') {
+    passBtn.classList.add('active-pass');
+    passText.classList.add('show');
+    row.classList.add('evaluated');
+  } else if (value === 'fail') {
+    failBtn.classList.add('active-fail');
+    issue.classList.add('show');
+    row.classList.add('issue');
+  }
+  
+  updateProgress();
+  document.getElementById('validationError').style.display = 'none';
+}
+
+// ── ITEM PHOTOS ──
+function triggerPhoto(itemId) {
+  document.getElementById('fileInput_' + itemId).click();
+}
+
+async function compressImage(file, maxKB = 150) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = function(e) {
+      const img = new Image();
+      img.onload = function() {
+        const canvas = document.createElement('canvas');
+        let { width, height } = img;
+        let quality = 0.75;
+        
+        const tryCompress = (w, h, q) => {
+          canvas.width = w; canvas.height = h;
+          const ctx = canvas.getContext('2d');
+          ctx.drawImage(img, 0, 0, w, h);
+          return canvas.toDataURL('image/jpeg', q);
+        };
+        
+        let dataUrl = tryCompress(width, height, quality);
+        let sizeKB = (dataUrl.length * 0.75) / 1024;
+        
+        while (sizeKB > maxKB && (width > 400 || height > 400)) {
+          width = Math.round(width * 0.7);
+          height = Math.round(height * 0.7);
+          quality = Math.max(0.3, quality - 0.1);
+          dataUrl = tryCompress(width, height, quality);
+          sizeKB = (dataUrl.length * 0.75) / 1024;
+        }
+        
+        while (sizeKB > maxKB && quality > 0.2) {
+          quality -= 0.1;
+          dataUrl = tryCompress(width, height, quality);
+          sizeKB = (dataUrl.length * 0.75) / 1024;
+        }
+        
+        resolve({ dataUrl, sizeKB, width, height });
+      };
+      img.src = e.target.result;
+    };
+    reader.onerror = reject;
+    reader.readAsDataURL(file);
+  });
+}
+
+async function handleItemPhotos(event, itemId) {
+  const files = Array.from(event.target.files);
+  const current = itemPhotos[itemId] || [];
+  if (current.length + files.length > 3) {
+    showToast('Tối đa 3 ảnh cho mỗi hạng mục!', true);
+    event.target.value = '';
+    return;
+  }
+  
+  for (const file of files) {
+    try {
+      const compressed = await compressImage(file);
+      itemPhotos[itemId].push({ ...compressed, name: file.name });
+    } catch(e) {
+      console.error('Compress error:', e);
+    }
+  }
+  event.target.value = '';
+  renderItemPhotos(itemId);
+}
+
+function renderItemPhotos(itemId) {
+  const container = document.getElementById('photos_' + itemId);
+  const photos = itemPhotos[itemId] || [];
+  container.innerHTML = photos.map((p, i) => `
+    <div class="inline-photo-box">
+      <img src="${p.dataUrl}">
+      <div class="remove" onclick="removeItemPhoto('${itemId}',${i})">✕</div>
+    </div>
+  `).join('');
+  if (photos.length < 3) {
+    container.innerHTML += `<div class="inline-photo-box" onclick="triggerPhoto('${itemId}')"><div class="placeholder">📷<br>Thêm</div></div>`;
+  }
+}
+
+function removeItemPhoto(itemId, idx) {
+  itemPhotos[itemId].splice(idx, 1);
+  renderItemPhotos(itemId);
+}
+
+// ── PROGRESS ──
+function updateProgress() {
+  let done = 0;
+  for (const key of Object.keys(evaluations)) {
+    if (evaluations[key]) done++;
+  }
+  const pct = totalItems > 0 ? Math.round((done / totalItems) * 100) : 0;
+  document.getElementById('progressFill').style.width = pct + '%';
+  document.getElementById('progressText').textContent = `${done}/${totalItems} hạng mục đã đánh giá`;
+}
+
+// ── SUBMIT ──
+async function submitForm() {
+  const gdv = document.getElementById('gdvSelect').value;
+  const qlkv = document.getElementById('qlkvSelect').value;
+  const store = document.getElementById('storeSelect').value;
+  
+  if (!gdv || !qlkv || !store) {
+    document.getElementById('validationError').textContent = '⚠️ Vui lòng chọn đầy đủ GĐV, QLKV và Cửa hàng!';
+    document.getElementById('validationError').style.display = 'block';
+    document.getElementById('validationError').scrollIntoView({ behavior: 'smooth' });
+    return;
+  }
+  
+  // Validate ALL items evaluated
+  const unevaluated = Object.keys(evaluations).filter(k => !evaluations[k]);
+  if (unevaluated.length > 0) {
+    document.getElementById('validationError').textContent = `⚠️ Còn ${unevaluated.length} hạng mục chưa đánh giá! Vui lòng chọn Đạt hoặc Không đạt cho TẤT CẢ.`;
+    document.getElementById('validationError').style.display = 'block';
+    document.getElementById('validationError').scrollIntoView({ behavior: 'smooth' });
+    const first = document.getElementById('row_' + unevaluated[0]);
+    if (first) first.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    return;
+  }
+  
+  // Validate FAIL items must have note + photo
+  const failNoNote = Object.keys(evaluations).filter(k => evaluations[k] === 'fail' && !itemNotes[k]?.trim());
+  const failNoPhoto = Object.keys(evaluations).filter(k => evaluations[k] === 'fail' && (!itemPhotos[k] || itemPhotos[k].length === 0));
+  
+  if (failNoNote.length > 0 || failNoPhoto.length > 0) {
+    let msg = '⚠️ ';
+    if (failNoNote.length > 0) msg += `${failNoNote.length} mục "Không đạt" chưa có diễn giải. `;
+    if (failNoPhoto.length > 0) msg += `${failNoPhoto.length} mục "Không đạt" chưa có ảnh.`;
+    document.getElementById('validationError').textContent = msg;
+    document.getElementById('validationError').style.display = 'block';
+    document.getElementById('validationError').scrollIntoView({ behavior: 'smooth' });
+    const firstBad = failNoNote[0] || failNoPhoto[0];
+    const row = document.getElementById('row_' + firstBad);
+    if (row) row.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    return;
+  }
+  
+  const generalNote = document.getElementById('generalNote').value;
+  const storeName = document.getElementById('storeSelect').selectedOptions[0]?.dataset?.name || '';
+  const tinh = document.getElementById('storeSelect').selectedOptions[0]?.dataset?.tinh || '';
+  
+  // Build payload
+  const items = [];
+  for (const area of areas) {
+    for (const item of area.items) {
+      const itemId = item.replace(/[^a-z0-9]/gi,'_');
+      items.push({
+        area: area.name,
+        item,
+        result: evaluations[itemId] === 'pass' ? 'Đạt' : 'Không đạt',
+        note: evaluations[itemId] === 'pass' ? '' : (itemNotes[itemId] || ''),
+        photos: itemPhotos[itemId] || []
+      });
+    }
+  }
+  
+  const passCount = items.filter(i => i.result === 'Đạt').length;
+  const failCount = items.filter(i => i.result === 'Không đạt').length;
+  
+  // Show loading
+  const btnSubmit = document.getElementById('btnSubmit');
+  btnSubmit.disabled = true;
+  document.getElementById('loading').style.display = 'block';
+  document.getElementById('validationError').style.display = 'none';
+  
+  // ── Build CSV ──
+  let csv = 'Ngày,GĐV,QLKV,Mã CH,Tên CH,Tỉnh,Khu vực,Hạng mục,Đánh giá,Diễn giải,Ghi chú,Số ảnh\n';
+  for (const it of items) {
+    csv += `${new Date().toLocaleDateString('vi-VN')},${gdv},${qlkv},${store},"${storeName}",${tinh},${it.area},${it.item},${it.result},"${it.note.replace(/"/g,'""')}","${generalNote.replace(/"/g,'""')}",${it.photos.length}\n`;
+  }
+  
+  // ── Save to localStorage first (always works) ──
+  const payload = {
+    timestamp: new Date().toISOString(),
+    gdv, qlkv, store, storeName, tinh,
+    items, generalNote,
+    totalItems, passCount, failCount
+  };
+  
+  try {
+    const history = JSON.parse(localStorage.getItem('csvc_v5_history') || '[]');
+    history.push(payload);
+    localStorage.setItem('csvc_v5_history', JSON.stringify(history));
+  } catch(e) { /* quota exceeded, ignore */ }
+  
+  // ── GỬI LÊN GOOGLE SHEETS + DRIVE (qua GAS) ──
+  let serverMsg = '';
+  let serverOk = false;
+  
+  if (GAS_URL) {
+    try {
+      // Build payload WITH photos (base64)
+      const gasPayload = {
+        gdv, qlkv, store, storeName, tinh,
+        items: items.map(it => ({
+          area: it.area,
+          item: it.item,
+          result: it.result,
+          note: it.note,
+          photos: it.photos.map(p => ({ dataUrl: p.dataUrl, name: p.name }))
+        })),
+        generalNote,
+        passCount,
+        failCount,
+        totalItems
+      };
+      
+      const resp = await fetch(GAS_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(gasPayload)
+      });
+      
+      if (resp.ok) {
+        const result = await resp.json();
+        if (result.success) {
+          serverOk = true;
+          serverMsg = `📊 ${result.rowsSaved} dòng đã lưu vào Sheet · 📸 ${result.savedPhotos} ảnh đã lưu Drive`;
+        } else {
+          serverMsg = '⚠️ Server báo lỗi: ' + (result.error || 'Không rõ');
+        }
+      } else {
+        serverMsg = '⚠️ Server trả về lỗi HTTP ' + resp.status;
+      }
+    } catch(e) {
+      serverMsg = '⚠️ Không kết nối được server: ' + e.message;
+      console.warn('GAS submit failed:', e.message);
+    }
+  } else {
+    serverMsg = '⚠️ Chưa cấu hình GAS_URL — dữ liệu chỉ lưu vào máy';
+  }
+  
+  // ── Kết quả ──
+  document.getElementById('loading').style.display = 'none';
+  
+  if (serverOk) {
+    document.getElementById('success').innerHTML = `✅ Đã gửi khảo sát thành công!<br><small style="font-weight:400;color:#64748b">${passCount}/${totalItems} Đạt · ${failCount} Không đạt</small><br><small style="font-weight:400;color:#16a34a">${serverMsg}</small>`;
+  } else {
+    // Fallback: download CSV
+    const bom = '\ufeff';
+    const blob = new Blob([bom + csv], { type: 'text/csv;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `CSVC_v5_${store}_${new Date().toISOString().slice(0,10)}.csv`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    
+    document.getElementById('success').innerHTML = `⚠️ Gửi server thất bại<br><small style="font-weight:400;color:#e67e22">${serverMsg}</small><br><small style="font-weight:400">Đã tải file CSV về máy — gửi file này cho GĐV/Admin</small>`;
+  }
+  
+  document.getElementById('success').style.display = 'block';
+  
+  // Reset button
+  const resetBtn = document.createElement('button');
+  resetBtn.textContent = '🔄 Khảo sát mới';
+  resetBtn.style.cssText = 'display:block;margin:12px auto;padding:10px 24px;background:#e2e8f0;border:none;border-radius:8px;font-size:13px;cursor:pointer;color:#334155';
+  resetBtn.onclick = function() {
+    document.getElementById('success').style.display = 'none';
+    document.getElementById('formContainer').style.display = 'block';
+    btnSubmit.disabled = false;
+    resetBtn.remove();
+    document.getElementById('gdvSelect').value = '';
+    document.getElementById('qlkvSelect').innerHTML = '<option value="">-- Chọn QLKV --</option>';
+    document.getElementById('qlkvSelect').disabled = true;
+    document.getElementById('storeSelect').innerHTML = '<option value="">-- Chọn Cửa hàng --</option>';
+    document.getElementById('storeSelect').disabled = true;
+    document.getElementById('storeInfo').style.display = 'none';
+    document.getElementById('generalNote').value = '';
+    document.getElementById('validationError').style.display = 'none';
+    buildChecklist();
+    window.scrollTo(0, 0);
+  };
+  document.getElementById('success').appendChild(resetBtn);
+}
+
+// ── START ──
+init();
+</script>
+</body>
+</html>
