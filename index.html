@@ -9,7 +9,7 @@
 :root {
   --primary: #4f46e5; --primary-light: #eef2ff; --border: #e2e8f0;
   --bg: #f1f5f9; --card: #fff; --text: #1a3c6e; --muted: #64748b;
-  --danger: #ef4444; --success: #10b981; --warning: #1a3c6e;
+  --danger: #ef4444; --success: #10b981; --warning: #ffc107;
   --indigo: #6366f1; --rose: #f43f5e;
 }
 * { box-sizing:border-box; margin:0; padding:0; }
@@ -67,7 +67,7 @@ header nav button.active { background:var(--primary); border-color:var(--primary
 .checklist-item .status-btn.fail { border-color:var(--danger); color:var(--danger); }
 .checklist-item .status-btn.fail.selected { background:var(--danger); color:#fff; border-color:var(--danger); }
 .checklist-item .status-btn.evidence { border-color:var(--warning); color:var(--warning); padding:8px 10px; font-size:16px; }
-.checklist-item .status-btn.evidence.has-evidence { background:#fffbeb; border-color:#1a3c6e; color:#1a3c6e; }
+.checklist-item .status-btn.evidence.has-evidence { background:#fffbeb; border-color:#ffc107; color:#ffc107; }
 .checklist-item .check-meta { display:flex; gap:12px; align-items:center; flex-wrap:wrap; margin-top:6px; font-size:11px; }
 .checklist-item .check-meta .timestamp { color:var(--muted); display:none; }
 .checklist-item .check-meta .timestamp.show { display:inline-flex; align-items:center; gap:3px; }
@@ -85,8 +85,8 @@ header nav button.active { background:var(--primary); border-color:var(--primary
 .checklist-item .fault-time-display { font-size:11px; color:var(--danger); margin-top:2px; display:none; font-weight:500; }
 .checklist-item .fault-time-display.show { display:block; }
 .audit-badge { display:inline-block; padding:3px 8px; border-radius:4px; font-size:11px; font-weight:500; }
-.audit-badge.warning { background:#fef9c3; color:#1a3c6e; }
-.audit-badge.ok { background:#e8f0fe; color:#065f46; }
+.audit-badge.warning { background:#fef9c3; color:#ffc107; }
+.audit-badge.ok { background:#d1fae5; color:#065f46; }
 .session-info { background:#f8fafc; border:1px dashed var(--border); border-radius:8px; padding:8px 14px; margin-bottom:12px; font-size:12px; color:var(--muted); display:none; }
 .session-info.show { display:block; }
 
@@ -102,9 +102,9 @@ tr:hover td { background:#f8fafc; }
 .bar-fill.yellow { background:var(--warning); }
 .bar-fill.red { background:var(--danger); }
 .badge { padding:2px 8px; border-radius:12px; font-size:11px; font-weight:600; }
-.badge.pass { background:#e8f0fe; color:#065f46; }
+.badge.pass { background:#d1fae5; color:#065f46; }
 .badge.fail { background:#fee2e2; color:#991b1b; }
-.badge.pending { background:#fef9c3; color:#1a3c6e; }
+.badge.pending { background:#fef9c3; color:#ffc107; }
 
 /* Buttons */
 .btn { padding:10px 20px; border-radius:8px; border:none; font-size:14px; font-weight:500; cursor:pointer; transition:all .15s; display:inline-flex; align-items:center; gap:6px; }
