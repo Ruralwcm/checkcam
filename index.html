@@ -8,13 +8,13 @@
 @import url('https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700;800&family=IBM+Plex+Sans+Condensed:wght@400;600;700&display=swap');
 :root {
   --primary: #4f46e5; --primary-light: #eef2ff; --border: #e2e8f0;
-  --bg: #f1f5f9; --card: #fff; --text: #1e293b; --muted: #64748b;
-  --danger: #ef4444; --success: #10b981; --warning: #f59e0b;
+  --bg: #f1f5f9; --card: #fff; --text: #1a3c6e; --muted: #64748b;
+  --danger: #ef4444; --success: #10b981; --warning: #1a3c6e;
   --indigo: #6366f1; --rose: #f43f5e;
 }
 * { box-sizing:border-box; margin:0; padding:0; }
 body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background:var(--bg); color:var(--text); min-height:100vh; }
-header { background: linear-gradient(135deg, #1e293b 0%, #334155 100%); color:#fff; padding:12px 24px; display:flex; align-items:center; justify-content:space-between; position:sticky; top:0; z-index:100; }
+header { background: linear-gradient(135deg, #1a3c6e 0%, #334155 100%); color:#fff; padding:12px 24px; display:flex; align-items:center; justify-content:space-between; position:sticky; top:0; z-index:100; }
 header h1 { font-size:18px; font-weight:600; }
 header nav { display:flex; gap:6px; }
 header nav button { padding:8px 16px; border-radius:8px; border:1px solid rgba(255,255,255,.2); background:transparent; color:rgba(255,255,255,.7); font-size:13px; font-weight:500; cursor:pointer; transition:all .15s; }
@@ -58,7 +58,7 @@ header nav button.active { background:var(--primary); border-color:var(--primary
 .checklist-item .item-body { flex:1; min-width:0; }
 .checklist-item .item-title { font-weight:600; font-size:14px; margin-bottom:3px; color:var(--text); }
 .checklist-item .item-desc { font-size:13px; color:#475569; line-height:1.5; margin-bottom:4px; }
-.checklist-item .item-time { display:inline-block; font-size:12px; background:#ede9fe; color:#5b21b6; padding:3px 10px; border-radius:5px; font-weight:500; }
+.checklist-item .item-time { display:inline-block; font-size:12px; background:#e8f0fe; color:#1a3c6e; padding:3px 10px; border-radius:5px; font-weight:500; }
 .checklist-item .item-actions { display:flex; gap:6px; align-items:center; flex-shrink:0; }
 .checklist-item .status-btn { padding:8px 14px; border-radius:8px; border:2px solid var(--border); background:var(--card); font-size:13px; font-weight:600; cursor:pointer; transition:all .15s; white-space:nowrap; }
 .checklist-item .status-btn:hover { transform:translateY(-1px); }
@@ -67,7 +67,7 @@ header nav button.active { background:var(--primary); border-color:var(--primary
 .checklist-item .status-btn.fail { border-color:var(--danger); color:var(--danger); }
 .checklist-item .status-btn.fail.selected { background:var(--danger); color:#fff; border-color:var(--danger); }
 .checklist-item .status-btn.evidence { border-color:var(--warning); color:var(--warning); padding:8px 10px; font-size:16px; }
-.checklist-item .status-btn.evidence.has-evidence { background:#fffbeb; border-color:#d97706; color:#d97706; }
+.checklist-item .status-btn.evidence.has-evidence { background:#fffbeb; border-color:#1a3c6e; color:#1a3c6e; }
 .checklist-item .check-meta { display:flex; gap:12px; align-items:center; flex-wrap:wrap; margin-top:6px; font-size:11px; }
 .checklist-item .check-meta .timestamp { color:var(--muted); display:none; }
 .checklist-item .check-meta .timestamp.show { display:inline-flex; align-items:center; gap:3px; }
@@ -85,8 +85,8 @@ header nav button.active { background:var(--primary); border-color:var(--primary
 .checklist-item .fault-time-display { font-size:11px; color:var(--danger); margin-top:2px; display:none; font-weight:500; }
 .checklist-item .fault-time-display.show { display:block; }
 .audit-badge { display:inline-block; padding:3px 8px; border-radius:4px; font-size:11px; font-weight:500; }
-.audit-badge.warning { background:#fef3c7; color:#92400e; }
-.audit-badge.ok { background:#d1fae5; color:#065f46; }
+.audit-badge.warning { background:#fef9c3; color:#1a3c6e; }
+.audit-badge.ok { background:#e8f0fe; color:#065f46; }
 .session-info { background:#f8fafc; border:1px dashed var(--border); border-radius:8px; padding:8px 14px; margin-bottom:12px; font-size:12px; color:var(--muted); display:none; }
 .session-info.show { display:block; }
 
@@ -102,9 +102,9 @@ tr:hover td { background:#f8fafc; }
 .bar-fill.yellow { background:var(--warning); }
 .bar-fill.red { background:var(--danger); }
 .badge { padding:2px 8px; border-radius:12px; font-size:11px; font-weight:600; }
-.badge.pass { background:#d1fae5; color:#065f46; }
+.badge.pass { background:#e8f0fe; color:#065f46; }
 .badge.fail { background:#fee2e2; color:#991b1b; }
-.badge.pending { background:#fef3c7; color:#92400e; }
+.badge.pending { background:#fef9c3; color:#1a3c6e; }
 
 /* Buttons */
 .btn { padding:10px 20px; border-radius:8px; border:none; font-size:14px; font-weight:500; cursor:pointer; transition:all .15s; display:inline-flex; align-items:center; gap:6px; }
@@ -149,7 +149,7 @@ tr:hover td { background:#f8fafc; }
 .badge-pill { display:inline-flex; align-items:center; padding:6px 14px; border-radius:20px; font-size:13px; font-weight:600; gap:4px; }
 
 /* Toast */
-.toast { position:fixed; bottom:24px; right:24px; background:#1e293b; color:#fff; padding:12px 24px; border-radius:8px; font-size:14px; opacity:0; transform:translateY(20px); transition:all .3s; z-index:1000; pointer-events:none; }
+.toast { position:fixed; bottom:24px; right:24px; background:#1a3c6e; color:#fff; padding:12px 24px; border-radius:8px; font-size:14px; opacity:0; transform:translateY(20px); transition:all .3s; z-index:1000; pointer-events:none; }
 .toast.show { opacity:1; transform:translateY(0); }
 
 /* Modal */
@@ -392,7 +392,7 @@ tr:hover td { background:#f8fafc; }
       <span style="font-size:13px;">Số CH/QLKV:</span>
       <input type="number" id="assignCount" value="2" min="1" max="20" style="width:60px;text-align:center;">
       <button class="btn btn-outline btn-sm" onclick="autoAssign()">🎲 Phân random</button>
-      <button class="btn btn-outline btn-sm" onclick="document.getElementById('uploadCsvInput').click()" style="background:#fef3c7;">📤 Upload list CH</button>
+      <button class="btn btn-outline btn-sm" onclick="document.getElementById('uploadCsvInput').click()" style="background:#fef9c3;">📤 Upload list CH</button>
       <input type="file" id="uploadCsvInput" accept=".csv,.txt" style="display:none;" onchange="uploadAssignList(this)">
       <button class="btn btn-outline btn-sm" onclick="clearAssignments()">🗑 Xóa hết</button>
       <button class="btn btn-sm" style="background:var(--success);color:#fff;" onclick="completeTask()">✅ Hoàn thành Task</button>
@@ -917,7 +917,7 @@ function renderChuyenDeList() {
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;">
         <div>
           <strong>${cd.name}</strong>
-          ${cd.isDefault ? '<span class="badge" style="background:#ede9fe;color:#5b21b6;margin-left:8px;">Mặc định</span>' : ''}
+          ${cd.isDefault ? '<span class="badge" style="background:#e8f0fe;color:#1a3c6e;margin-left:8px;">Mặc định</span>' : ''}
           <span style="font-size:12px;color:var(--muted);margin-left:8px;">${cd.items.length} hạng mục</span>
         </div>
         <div style="display:flex;gap:4px;">
